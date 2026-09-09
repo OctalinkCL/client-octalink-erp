@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { mesCicloActual } from '@/lib/formato'
-import { useCobranza } from '@/modules/cobranza/useCobranza'
-import { useOts } from '@/modules/ots/useOts'
+import { crearCobroDesdeOt, crearCobroDesdeSuscripcion } from '@/modules/cobranza/cobranza.service'
+import { crearOtDesdeCotizacion } from '@/modules/ots/ots.service'
 import type { Cobro } from '@/modules/cobranza/types'
 import type { Cotizacion } from '@/modules/cotizaciones/types'
 import type { Ot } from '@/modules/ots/types'
@@ -16,42 +17,24 @@ function esDelMesActual(ts: Cobro['fecha_pago']): boolean {
 }
 
 /**
- * Agregador de solo lectura del Dashboard. Carga solo lo accionable
- * (ver dashboard.service) y cruza en el cliente. Las secciones "sin cobro" /
- * "sin OT" usan flags denormalizados (`cobro_generado`, `ot_generada`), así
- * que no hace falta traer el histórico de cobros para saberlo.
+ * Agregador de solo lectura del Dashboard. Query `['dashboard']` con datos
+ * acotados (ver dashboard.service); las acciones llaman a los services y
+ * invalidan las keys afectadas.
  */
 export function useDashboard() {
-  const cobros = ref<Cobro[]>([])
-  const otsCompletadas = ref<Ot[]>([])
-  const cotizaciones = ref<Cotizacion[]>([])
-  const suscripcionesActivas = ref<Suscripcion[]>([])
-
-  const loading = ref(false)
-  const error = ref('')
+  const qc = useQueryClient()
+  const mesActual = mesCicloActual()
   const procesando = ref('')
 
-  const { generarDesdeOt, generarDesdeSuscripcion } = useCobranza()
-  const { generarDesdeCotizacion } = useOts()
+  const query = useQuery({ queryKey: ['dashboard'], queryFn: cargarDatosDashboard })
 
-  const mesActual = mesCicloActual()
+  const loading = computed(() => query.isPending.value)
+  const error = computed(() => (query.error.value ? 'No se pudo cargar el dashboard.' : ''))
 
-  async function cargar() {
-    loading.value = true
-    error.value = ''
-    try {
-      const d = await cargarDatosDashboard()
-      cobros.value = d.cobros
-      otsCompletadas.value = d.otsCompletadas
-      cotizaciones.value = d.cotizaciones
-      suscripcionesActivas.value = d.suscripcionesActivas
-    } catch (e) {
-      error.value = 'No se pudo cargar el dashboard.'
-      console.error(e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const cobros = computed(() => query.data.value?.cobros ?? [])
+  const otsCompletadas = computed(() => query.data.value?.otsCompletadas ?? [])
+  const cotizaciones = computed(() => query.data.value?.cotizaciones ?? [])
+  const suscripcionesActivas = computed(() => query.data.value?.suscripcionesActivas ?? [])
 
   // --- Bandeja de tareas ---
 
@@ -95,8 +78,6 @@ export function useDashboard() {
   )
 
   // --- Resumen ---
-  // porCobrar: todos los no-pagados vienen en el set "abiertos".
-  // cobradoMes: los pagados de este mes vienen en el set "pagados este mes".
 
   const resumen = computed(() => ({
     porCobrar: cobros.value
@@ -111,53 +92,38 @@ export function useDashboard() {
       .length,
   }))
 
-  // --- Acciones (reusan los composables dueños; luego recargan) ---
+  // --- Acciones ---
 
-  async function generarCobroDeSuscripcion(s: Suscripcion) {
-    procesando.value = `sus-${s.id}`
+  async function correr(clave: string, fn: () => Promise<unknown>, keys: string[]) {
+    procesando.value = clave
     try {
-      await generarDesdeSuscripcion(s, mesActual)
-      await cargar()
+      await fn()
+      for (const k of ['dashboard', ...keys]) {
+        qc.invalidateQueries({ queryKey: [k] })
+      }
     } catch (e) {
       console.error(e)
-      window.alert('No se pudo generar el cobro.')
+      window.alert('No se pudo completar la acción.')
     } finally {
       procesando.value = ''
     }
   }
 
-  async function generarCobroDeOt(o: Ot) {
-    procesando.value = `ot-${o.id}`
-    try {
-      await generarDesdeOt(o)
-      await cargar()
-    } catch (e) {
-      console.error(e)
-      window.alert('No se pudo generar el cobro.')
-    } finally {
-      procesando.value = ''
-    }
-  }
+  const generarCobroDeSuscripcion = (s: Suscripcion) =>
+    correr(`sus-${s.id}`, () => crearCobroDesdeSuscripcion(s, mesActual), ['cobros', 'cobros-mes'])
 
-  async function generarOtDeCotizacion(q: Cotizacion) {
-    procesando.value = `cot-${q.id}`
-    try {
-      await generarDesdeCotizacion(q)
-      await cargar()
-    } catch (e) {
-      console.error(e)
-      window.alert('No se pudo generar la OT.')
-    } finally {
-      procesando.value = ''
-    }
-  }
+  const generarCobroDeOt = (o: Ot) =>
+    correr(`ot-${o.id}`, () => crearCobroDesdeOt(o), ['cobros', 'ots'])
+
+  const generarOtDeCotizacion = (q: Cotizacion) =>
+    correr(`cot-${q.id}`, () => crearOtDesdeCotizacion(q), ['ots', 'cotizaciones'])
 
   return {
     loading,
     error,
     procesando,
     mesActual,
-    cargar,
+    cargar: () => query.refetch(),
     suscripcionesSinCobro,
     otsSinCobro,
     cotizacionesSinOt,

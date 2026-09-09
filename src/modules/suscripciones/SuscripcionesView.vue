@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table'
 import { formatoCLP, mesCicloActual, mesCicloLegible } from '@/lib/formato'
 import { useCobranza } from '@/modules/cobranza/useCobranza'
+import { useCobrosSuscripcionMes } from '@/modules/cobranza/useCobrosSuscripcionMes'
 import { useSuscripciones } from './useSuscripciones'
 import { ESTADOS_SUSCRIPCION, type EstadoSuscripcion, type Suscripcion } from './types'
 
@@ -29,23 +30,15 @@ const {
   loading,
   error,
   busqueda,
-  cargar,
   cambiarEstado,
   eliminar,
 } = useSuscripciones()
-const { generarDesdeSuscripcion, cobrosSuscripcionDelMes } = useCobranza()
+const { generarDesdeSuscripcion } = useCobranza()
 
 const generandoCobro = ref('')
 const mesActual = mesCicloActual()
-// suscripcion_id -> { id, numero } del cobro de este mes, si ya existe
-const cobrosDelMes = ref<Map<string, { id: string; numero: number }>>(new Map())
-
-async function cargarTodo() {
-  await cargar()
-  cobrosDelMes.value = await cobrosSuscripcionDelMes(mesActual)
-}
-
-onMounted(cargarTodo)
+// suscripcion_id -> { id, numero } del cobro de este mes (se refresca solo al generar)
+const { mapa: cobrosDelMes } = useCobrosSuscripcionMes(mesActual)
 
 function cobroDelMes(id: string) {
   return cobrosDelMes.value.get(id)
@@ -69,8 +62,7 @@ async function generarCobroMes(s: Suscripcion) {
     return
   generandoCobro.value = s.id
   try {
-    const { id, numero } = await generarDesdeSuscripcion(s, mesActual)
-    cobrosDelMes.value = new Map(cobrosDelMes.value).set(s.id, { id, numero })
+    await generarDesdeSuscripcion(s, mesActual)
   } catch (e) {
     console.error(e)
     window.alert('No se pudo generar el cobro.')

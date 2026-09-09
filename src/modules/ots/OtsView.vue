@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,12 +24,10 @@ import { useOts } from './useOts'
 import { ESTADOS_OT, type EstadoOt, type Ot } from './types'
 
 const router = useRouter()
-const { otsFiltradas, loading, error, busqueda, cargar, cambiarEstado, eliminar } = useOts()
+const { otsFiltradas, loading, error, busqueda, cambiarEstado, eliminar } = useOts()
 const { generarDesdeOt } = useCobranza()
 
 const generandoCobro = ref('')
-
-onMounted(cargar)
 
 function editar(o: Ot) {
   router.push({ name: 'ot-editar', params: { id: o.id } })

@@ -43,14 +43,32 @@ src/modules/<modulo>/
 - `eliminar<Modulo>(id)` → `deleteDoc`.
 - Sin `try/catch` acá: los errores suben al composable.
 
-### 3. `use<Modulo>.ts`
+### 3. `use<Modulo>.ts` — con TanStack Query
 
-- Estado: `items` (`ref<X[]>([])`), `loading`, `error`, `busqueda`.
-- `itemsFiltrados` = `computed` que filtra por `busqueda` sobre los campos de texto.
-- `cargar()` → setea `loading`, llama al service, captura error en `error.value` +
-  `console.error(e)`, baja `loading` en `finally`.
-- `crear/actualizar/eliminar` → llaman al service y luego `await cargar()`
-  (refresco simple; `onSnapshot` es un upgrade posterior si hace falta).
+El composable envuelve `useQuery` (lista) + `useMutation` (acciones). Referencia:
+[`useClientes.ts`](../src/modules/clientes/useClientes.ts).
+
+- `const KEY = ['<modulo>'] as const`.
+- `useQuery({ queryKey: KEY, queryFn: listar<Modulo>s })`.
+- Expone: `items = computed(() => query.data.value ?? [])`,
+  `loading = computed(() => query.isPending.value)`,
+  `error = computed(() => query.error.value ? '<mensaje>' : '')`,
+  `busqueda` (ref local), `itemsFiltrados` (computed).
+- **Mutaciones**: `useMutation({ mutationFn, onSuccess: invalidar })`. `invalidar`
+  hace `qc.invalidateQueries({ queryKey: KEY })` **más las keys afectadas**
+  (`['dashboard']` casi siempre; `['cotizaciones']` si tocás el flag `ot_generada`,
+  `['ots']` si tocás `cobro_generado`, `['cobros-mes']` al generar cobro de suscripción).
+- **Delete optimista**: `onMutate` cancela la query, guarda `prev`, quita la fila
+  del cache (`setQueryData`); `onError` restaura `prev`; `onSettled` invalida.
+- El composable devuelve funciones que llaman `mutateAsync(...)`, con la **misma
+  firma** que antes (`crear(input)`, `actualizar(id, input)`, `eliminar(id)`), para
+  que las vistas no cambien.
+- `obtener(id)` NO es query: pasa derecho al service (lo usa el form de edición).
+- Las vistas **no** llaman `onMounted(cargar)` — la query carga sola al montar.
+  `cargar` (= `query.refetch`) solo se expone para un botón "Actualizar".
+
+Defaults del `QueryClient` (en `main.ts`): `staleTime` 60s,
+`refetchOnWindowFocus: false`.
 
 ### 4. `<Modulo>FormDialog.vue`
 

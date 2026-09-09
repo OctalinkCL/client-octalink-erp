@@ -31,7 +31,7 @@ const router = useRouter()
 const id = computed(() => (route.params.id as string) || '')
 const esEdicion = computed(() => !!id.value)
 
-const { clientes, cargar: cargarClientes, crear: crearCliente } = useClientes()
+const { clientes, crear: crearCliente } = useClientes()
 const { obtener, crear, actualizar } = useSuscripciones()
 
 const form = reactive<SuscripcionInput>(suscripcionInputVacio())
@@ -45,7 +45,6 @@ const guardandoCliente = ref(false)
 onMounted(async () => {
   cargando.value = true
   try {
-    await cargarClientes()
     if (esEdicion.value) {
       const s = await obtener(id.value)
       if (!s) {

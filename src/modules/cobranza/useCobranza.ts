@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
 import type { Cobro, CobroInput, EstadoBoleta, EstadoPago } from './types'
@@ -6,7 +7,6 @@ import {
   actualizarCobro,
   cambiarEstadoBoleta,
   cambiarEstadoPago,
-  cobrosDeSuscripcionesDelMes,
   crearCobro,
   crearCobroDesdeOt,
   crearCobroDesdeSuscripcion,
@@ -15,11 +15,26 @@ import {
   obtenerCobro,
 } from './cobranza.service'
 
+const KEY = ['cobros'] as const
+
 export function useCobranza() {
-  const cobros = ref<Cobro[]>([])
-  const loading = ref(false)
-  const error = ref('')
+  const qc = useQueryClient()
   const busqueda = ref('')
+
+  // Un cambio en cobros afecta también ots (flag cobro_generado), el mapa de
+  // cobros del mes de suscripciones, y el dashboard.
+  const invalidar = () => {
+    qc.invalidateQueries({ queryKey: KEY })
+    qc.invalidateQueries({ queryKey: ['ots'] })
+    qc.invalidateQueries({ queryKey: ['cobros-mes'] })
+    qc.invalidateQueries({ queryKey: ['dashboard'] })
+  }
+
+  const query = useQuery({ queryKey: KEY, queryFn: listarCobros })
+
+  const cobros = computed(() => query.data.value ?? [])
+  const loading = computed(() => query.isPending.value)
+  const error = computed(() => (query.error.value ? 'No se pudieron cargar los cobros.' : ''))
 
   const cobrosFiltrados = computed(() => {
     const q = busqueda.value.trim().toLowerCase()
@@ -31,57 +46,52 @@ export function useCobranza() {
     )
   })
 
-  async function cargar() {
-    loading.value = true
-    error.value = ''
-    try {
-      cobros.value = await listarCobros()
-    } catch (e) {
-      error.value = 'No se pudieron cargar los cobros.'
-      console.error(e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const crearMut = useMutation({
+    mutationFn: (input: CobroInput) => crearCobro(input),
+    onSuccess: invalidar,
+  })
 
-  function obtener(id: string) {
-    return obtenerCobro(id)
-  }
+  const actualizarMut = useMutation({
+    mutationFn: (v: { id: string; input: CobroInput }) => actualizarCobro(v.id, v.input),
+    onSuccess: invalidar,
+  })
 
-  function crear(input: CobroInput) {
-    return crearCobro(input)
-  }
+  const pagoMut = useMutation({
+    mutationFn: (v: { id: string; estado: EstadoPago; fecha: Date | null }) =>
+      cambiarEstadoPago(v.id, v.estado, v.fecha),
+    onSuccess: invalidar,
+  })
 
-  function actualizar(id: string, input: CobroInput) {
-    return actualizarCobro(id, input)
-  }
+  const boletaMut = useMutation({
+    mutationFn: (v: { id: string; estado: EstadoBoleta; url?: string }) =>
+      cambiarEstadoBoleta(v.id, v.estado, v.url),
+    onSuccess: invalidar,
+  })
 
-  function generarDesdeOt(ot: Ot) {
-    return crearCobroDesdeOt(ot)
-  }
+  const generarDesdeOtMut = useMutation({
+    mutationFn: (ot: Ot) => crearCobroDesdeOt(ot),
+    onSuccess: invalidar,
+  })
 
-  function generarDesdeSuscripcion(s: Suscripcion, mesCiclo: string) {
-    return crearCobroDesdeSuscripcion(s, mesCiclo)
-  }
+  const generarDesdeSuscripcionMut = useMutation({
+    mutationFn: (v: { s: Suscripcion; mesCiclo: string }) =>
+      crearCobroDesdeSuscripcion(v.s, v.mesCiclo),
+    onSuccess: invalidar,
+  })
 
-  function cobrosSuscripcionDelMes(mesCiclo: string) {
-    return cobrosDeSuscripcionesDelMes(mesCiclo)
-  }
-
-  async function marcarPago(id: string, estado: EstadoPago, fecha: Date | null) {
-    await cambiarEstadoPago(id, estado, fecha)
-    await cargar()
-  }
-
-  async function marcarBoleta(id: string, estado: EstadoBoleta, url?: string) {
-    await cambiarEstadoBoleta(id, estado, url)
-    await cargar()
-  }
-
-  async function eliminar(id: string) {
-    await eliminarCobro(id)
-    await cargar()
-  }
+  const eliminarMut = useMutation({
+    mutationFn: (id: string) => eliminarCobro(id),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: KEY })
+      const prev = qc.getQueryData<Cobro[]>(KEY)
+      qc.setQueryData<Cobro[]>(KEY, (old = []) => old.filter((c) => c.id !== id))
+      return { prev }
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev)
+    },
+    onSettled: invalidar,
+  })
 
   return {
     cobros,
@@ -89,15 +99,17 @@ export function useCobranza() {
     loading,
     error,
     busqueda,
-    cargar,
-    obtener,
-    crear,
-    actualizar,
-    generarDesdeOt,
-    generarDesdeSuscripcion,
-    cobrosSuscripcionDelMes,
-    marcarPago,
-    marcarBoleta,
-    eliminar,
+    cargar: () => query.refetch(),
+    obtener: (id: string) => obtenerCobro(id),
+    crear: (input: CobroInput) => crearMut.mutateAsync(input),
+    actualizar: (id: string, input: CobroInput) => actualizarMut.mutateAsync({ id, input }),
+    marcarPago: (id: string, estado: EstadoPago, fecha: Date | null) =>
+      pagoMut.mutateAsync({ id, estado, fecha }),
+    marcarBoleta: (id: string, estado: EstadoBoleta, url?: string) =>
+      boletaMut.mutateAsync({ id, estado, url }),
+    generarDesdeOt: (ot: Ot) => generarDesdeOtMut.mutateAsync(ot),
+    generarDesdeSuscripcion: (s: Suscripcion, mesCiclo: string) =>
+      generarDesdeSuscripcionMut.mutateAsync({ s, mesCiclo }),
+    eliminar: (id: string) => eliminarMut.mutateAsync(id),
   }
 }

@@ -33,7 +33,7 @@ const router = useRouter()
 const id = computed(() => (route.params.id as string) || '')
 const esEdicion = computed(() => !!id.value)
 
-const { clientes, cargar: cargarClientes, crear: crearCliente } = useClientes()
+const { clientes, crear: crearCliente } = useClientes()
 const { obtener, crear, actualizar, marcarPago } = useCobranza()
 
 const form = reactive<CobroInput>(cobroInputVacio())
@@ -52,7 +52,6 @@ function pad(n: number) {
 onMounted(async () => {
   cargando.value = true
   try {
-    await cargarClientes()
     if (esEdicion.value) {
       const c = await obtener(id.value)
       if (!c) {

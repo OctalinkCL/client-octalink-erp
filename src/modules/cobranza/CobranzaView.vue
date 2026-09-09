@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,18 +29,8 @@ import {
 } from './types'
 
 const router = useRouter()
-const {
-  cobrosFiltrados,
-  loading,
-  error,
-  busqueda,
-  cargar,
-  marcarPago,
-  marcarBoleta,
-  eliminar,
-} = useCobranza()
-
-onMounted(cargar)
+const { cobrosFiltrados, loading, error, busqueda, marcarPago, marcarBoleta, eliminar } =
+  useCobranza()
 
 function editar(c: Cobro) {
   router.push({ name: 'cobro-editar', params: { id: c.id } })

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { formatoCLP, mesCicloLegible } from '@/lib/formato'
@@ -23,8 +22,6 @@ const {
   generarCobroDeOt,
   generarOtDeCotizacion,
 } = useDashboard()
-
-onMounted(cargar)
 </script>
 
 <template>
