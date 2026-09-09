@@ -1,29 +1,23 @@
 rules_version = '2';
 
-// ERP interno de Octalink. Un solo usuario (JuanAndrés): todo requiere sesión
-// de Firebase Auth. Como hay un único usuario, "autenticado" == "el dueño".
+// ERP interno de Octalink. Un solo usuario (JuanAndrés): todo el acceso está
+// amarrado a su UID de Firebase Auth.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Para amarrar a un UID concreto (más estricto, recomendado cuando lo tengas):
-    // Firebase Console → Authentication → Users → copiar "User UID", pegarlo aquí,
-    // y usar isOwner() en vez de isSignedIn() en los match de abajo.
     function isOwner() {
-      return isSignedIn() && request.auth.uid == 'REEMPLAZAR_CON_EL_UID';
+      return request.auth != null
+        && request.auth.uid == 'nFCr8TpWRyOVxzY3ikHOXcCoojV2';
     }
 
-    match /clientes/{id}      { allow read, write: if isSignedIn(); }
-    match /ots/{id}           { allow read, write: if isSignedIn(); }
-    match /cobros/{id}        { allow read, write: if isSignedIn(); }
-    match /suscripciones/{id} { allow read, write: if isSignedIn(); }
-    match /settings/{id}      { allow read, write: if isSignedIn(); }
+    match /clientes/{id}      { allow read, write: if isOwner(); }
+    match /ots/{id}           { allow read, write: if isOwner(); }
+    match /cobros/{id}        { allow read, write: if isOwner(); }
+    match /suscripciones/{id} { allow read, write: if isOwner(); }
+    match /settings/{id}      { allow read, write: if isOwner(); }
 
     match /cotizaciones/{id} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isOwner();
       // Futuro link público de cotización: aquí irá un `allow get: if true;`
       // (la llave es el ID random del doc) y un `allow update` acotado a
       // ['estado','respondida_en','comentario_cliente'] para que el cliente
