@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { obtenerSiguienteNumero, guardarSiguienteNumero } from './configuracion.service'
 
-const numeros = reactive({ cotizaciones: 1, ots: 1 })
+const numeros = reactive({ cotizaciones: 1, ots: 1, cobros: 1 })
 const cargando = ref(false)
 const guardando = ref(false)
 const mensaje = ref('')
@@ -15,6 +15,7 @@ async function cargar() {
   try {
     numeros.cotizaciones = await obtenerSiguienteNumero('cotizaciones')
     numeros.ots = await obtenerSiguienteNumero('ots')
+    numeros.cobros = await obtenerSiguienteNumero('cobros')
   } catch (e) {
     console.error(e)
     mensaje.value = 'No se pudo cargar la configuración.'
@@ -29,6 +30,7 @@ async function guardar() {
   try {
     await guardarSiguienteNumero('cotizaciones', numeros.cotizaciones)
     await guardarSiguienteNumero('ots', numeros.ots)
+    await guardarSiguienteNumero('cobros', numeros.cobros)
     await cargar()
     mensaje.value = 'Guardado.'
   } catch (e) {
@@ -63,6 +65,18 @@ onMounted(cargar)
       <Input
         id="num-ot"
         v-model.number="numeros.ots"
+        type="number"
+        min="1"
+        step="1"
+        :disabled="cargando"
+      />
+    </div>
+
+    <div class="grid gap-1.5">
+      <Label for="num-cobro">Próximo número de cobro</Label>
+      <Input
+        id="num-cobro"
+        v-model.number="numeros.cobros"
         type="number"
         min="1"
         step="1"

@@ -11,7 +11,7 @@ export const panelRoutes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'dashboard',
-        component: () => import('@/views/DashboardView.vue'),
+        component: () => import('@/modules/dashboard/DashboardView.vue'),
       },
       {
         path: 'clientes',
@@ -47,6 +47,36 @@ export const panelRoutes: RouteRecordRaw[] = [
         path: 'ots/:id',
         name: 'ot-editar',
         component: () => import('@/modules/ots/OtFormView.vue'),
+      },
+      {
+        path: 'cobranza',
+        name: 'cobranza',
+        component: () => import('@/modules/cobranza/CobranzaView.vue'),
+      },
+      {
+        path: 'cobranza/nueva',
+        name: 'cobro-nuevo',
+        component: () => import('@/modules/cobranza/CobroFormView.vue'),
+      },
+      {
+        path: 'cobranza/:id',
+        name: 'cobro-editar',
+        component: () => import('@/modules/cobranza/CobroFormView.vue'),
+      },
+      {
+        path: 'suscripciones',
+        name: 'suscripciones',
+        component: () => import('@/modules/suscripciones/SuscripcionesView.vue'),
+      },
+      {
+        path: 'suscripciones/nueva',
+        name: 'suscripcion-nueva',
+        component: () => import('@/modules/suscripciones/SuscripcionFormView.vue'),
+      },
+      {
+        path: 'suscripciones/:id',
+        name: 'suscripcion-editar',
+        component: () => import('@/modules/suscripciones/SuscripcionFormView.vue'),
       },
       {
         path: 'configuracion',

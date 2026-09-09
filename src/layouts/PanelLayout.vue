@@ -10,9 +10,9 @@ const nav = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/clientes', label: 'Clientes' },
   { to: '/cotizaciones', label: 'Cotizaciones' },
-  { to: '/ots', label: 'OTs' },
-  // { to: '/cobranza', label: 'Cobranza' },
-  // { to: '/suscripciones', label: 'Suscripciones' },
+  { to: '/ots', label: 'Órdenes de trabajo' },
+  { to: '/cobranza', label: 'Cobranza' },
+  { to: '/suscripciones', label: 'Suscripciones' },
   { to: '/configuracion', label: 'Configuración' },
 ]
 

@@ -11,4 +11,9 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  // pdfmake carga por import() dinámico; pre-empaquetarlo evita el "Failed to
+  // fetch dynamically imported module" cuando Vite reoptimiza en caliente.
+  optimizeDeps: {
+    include: ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts'],
+  },
 })

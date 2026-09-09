@@ -117,6 +117,19 @@ Referencia: [`src/modules/cotizaciones/`](../src/modules/cotizaciones).
 - **Fechas:** `serverTimestamp()` al escribir; en el tipo son `Timestamp | null`.
 - **shadcn-vue:** agregar componentes con `pnpm dlx shadcn-vue@latest add <x>`, no a mano.
 - **Sin store (Pinia)** salvo estado global real. Un módulo = un composable.
+- **Relaciones = back-references opcionales.** Una entidad guarda punteros a su
+  origen directo (`ot_id`, `cotizacion_id`, `suscripcion_id`, …), siempre
+  opcionales (`''` / `null`). El relato completo se recorre en la vista de
+  detalle; no se denormaliza la cadena entera. Ver `cobros` en
+  [`src/modules/cobranza/types.ts`](../src/modules/cobranza/types.ts).
+- **Acciones entre módulos** van en el composable del módulo dueño de la entidad
+  que se crea: `useOts().generarDesdeCotizacion(c)`,
+  `useCobranza().generarDesdeOt(ot)`. La vista importa el composable, nunca el service ajeno.
+- **Excepción: agregadores de solo lectura** (el Dashboard). `useDashboard` sí
+  importa los `listar*()` de varios services para cruzar en el cliente; para las
+  acciones reusa los composables dueños. Ver [`src/modules/dashboard/`](../src/modules/dashboard).
+- **Dependencias pesadas** (pdfmake ~815 kB gzip): `import()` dinámico dentro del
+  handler, no import estático. Ver `pdf()` en `CobranzaView.vue`.
 
 ## Checklist
 
