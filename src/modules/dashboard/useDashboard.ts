@@ -1,15 +1,12 @@
 import { computed, ref } from 'vue'
 import { mesCicloActual } from '@/lib/formato'
-import { listarCobros } from '@/modules/cobranza/cobranza.service'
 import { useCobranza } from '@/modules/cobranza/useCobranza'
-import { listarCotizaciones } from '@/modules/cotizaciones/cotizaciones.service'
-import { listarOts } from '@/modules/ots/ots.service'
 import { useOts } from '@/modules/ots/useOts'
-import { listarSuscripciones } from '@/modules/suscripciones/suscripciones.service'
 import type { Cobro } from '@/modules/cobranza/types'
 import type { Cotizacion } from '@/modules/cotizaciones/types'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
+import { cargarDatosDashboard } from './dashboard.service'
 
 function esDelMesActual(ts: Cobro['fecha_pago']): boolean {
   if (!ts) return false
@@ -19,14 +16,16 @@ function esDelMesActual(ts: Cobro['fecha_pago']): boolean {
 }
 
 /**
- * Agregador de solo lectura del Dashboard. Carga las 4 colecciones de una vez
- * y cruza en el cliente (a esta escala son migajas para Firestore).
+ * Agregador de solo lectura del Dashboard. Carga solo lo accionable
+ * (ver dashboard.service) y cruza en el cliente. Las secciones "sin cobro" /
+ * "sin OT" usan flags denormalizados (`cobro_generado`, `ot_generada`), así
+ * que no hace falta traer el histórico de cobros para saberlo.
  */
 export function useDashboard() {
   const cobros = ref<Cobro[]>([])
-  const ots = ref<Ot[]>([])
+  const otsCompletadas = ref<Ot[]>([])
   const cotizaciones = ref<Cotizacion[]>([])
-  const suscripciones = ref<Suscripcion[]>([])
+  const suscripcionesActivas = ref<Suscripcion[]>([])
 
   const loading = ref(false)
   const error = ref('')
@@ -41,16 +40,11 @@ export function useDashboard() {
     loading.value = true
     error.value = ''
     try {
-      const [c, o, q, s] = await Promise.all([
-        listarCobros(),
-        listarOts(),
-        listarCotizaciones(),
-        listarSuscripciones(),
-      ])
-      cobros.value = c
-      ots.value = o
-      cotizaciones.value = q
-      suscripciones.value = s
+      const d = await cargarDatosDashboard()
+      cobros.value = d.cobros
+      otsCompletadas.value = d.otsCompletadas
+      cotizaciones.value = d.cotizaciones
+      suscripcionesActivas.value = d.suscripcionesActivas
     } catch (e) {
       error.value = 'No se pudo cargar el dashboard.'
       console.error(e)
@@ -62,9 +56,8 @@ export function useDashboard() {
   // --- Bandeja de tareas ---
 
   const suscripcionesSinCobro = computed(() =>
-    suscripciones.value.filter(
+    suscripcionesActivas.value.filter(
       (s) =>
-        s.estado === 'activa' &&
         !cobros.value.some(
           (c) => c.suscripcion_id === s.id && c.mes_ciclo === mesActual,
         ),
@@ -72,15 +65,11 @@ export function useDashboard() {
   )
 
   const otsSinCobro = computed(() =>
-    ots.value.filter(
-      (o) => o.estado === 'completada' && !cobros.value.some((c) => c.ot_id === o.id),
-    ),
+    otsCompletadas.value.filter((o) => !o.cobro_generado),
   )
 
   const cotizacionesSinOt = computed(() =>
-    cotizaciones.value.filter(
-      (q) => q.estado === 'aceptada' && !ots.value.some((o) => o.cotizacion_id === q.id),
-    ),
+    cotizaciones.value.filter((q) => q.estado === 'aceptada' && !q.ot_generada),
   )
 
   const cobrosPorEnviar = computed(() =>
@@ -106,6 +95,8 @@ export function useDashboard() {
   )
 
   // --- Resumen ---
+  // porCobrar: todos los no-pagados vienen en el set "abiertos".
+  // cobradoMes: los pagados de este mes vienen en el set "pagados este mes".
 
   const resumen = computed(() => ({
     porCobrar: cobros.value
@@ -114,10 +105,8 @@ export function useDashboard() {
     cobradoMes: cobros.value
       .filter((c) => c.estado_pago === 'pagado' && esDelMesActual(c.fecha_pago))
       .reduce((acc, c) => acc + (c.monto || 0), 0),
-    suscripcionesActivas: suscripciones.value.filter((s) => s.estado === 'activa').length,
-    mrr: suscripciones.value
-      .filter((s) => s.estado === 'activa')
-      .reduce((acc, s) => acc + (s.monto || 0), 0),
+    suscripcionesActivas: suscripcionesActivas.value.length,
+    mrr: suscripcionesActivas.value.reduce((acc, s) => acc + (s.monto || 0), 0),
     cotizacionesPendientes: cotizaciones.value.filter((q) => q.estado === 'pendiente')
       .length,
   }))

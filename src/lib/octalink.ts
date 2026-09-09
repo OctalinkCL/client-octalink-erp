@@ -1,15 +1,12 @@
 // Datos de Octalink para la Orden de Cobro (PDF interno, no es boleta).
-// TODO(JuanAndrés): completar con los datos reales.
+// TODO(JuanAndrés): completar N° de cuenta real.
 export const OCTALINK = {
-  razon_social: 'Octalink SpA',
-  rut: '00.000.000-0',
-  email: 'cobros@octalink.cl',
+  email: 'hola@octalink.cl',
   banco: {
     banco: 'Banco BCI',
     tipo_cuenta: 'Cuenta Corriente',
     numero: '00000000',
-    titular: 'Octalink SpA',
-    rut_titular: '00.000.000-0',
-    email: 'cobros@octalink.cl',
+    titular: 'Octalink',
+    email: 'hola@octalink.cl',
   },
 } as const

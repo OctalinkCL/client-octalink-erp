@@ -22,6 +22,11 @@ import type { Cobro, CobroInput, EstadoBoleta, EstadoPago } from './types'
 const cobrosCol = collection(db, 'cobros')
 const contadorRef = doc(db, 'settings', 'cobros')
 
+function marcarOtConCobro(otId: string, valor: boolean) {
+  if (!otId) return Promise.resolve()
+  return updateDoc(doc(db, 'ots', otId), { cobro_generado: valor })
+}
+
 export async function listarCobros(): Promise<Cobro[]> {
   const snap = await getDocs(query(cobrosCol, orderBy('numero', 'desc')))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Cobro)
@@ -89,31 +94,35 @@ export async function crearCobroDesdeOt(
   ot: Ot,
 ): Promise<{ id: string; numero: number; yaExistia: boolean }> {
   const existente = await cobroDeOt(ot.id)
+
+  let result: { id: string; numero: number; yaExistia: boolean }
   if (existente) {
-    return { id: existente.id, numero: existente.numero, yaExistia: true }
+    result = { id: existente.id, numero: existente.numero, yaExistia: true }
+  } else {
+    const input: CobroInput = {
+      cliente_id: ot.cliente_id,
+      cliente_nombre: ot.cliente_nombre,
+      origen: 'ot',
+      ot_id: ot.id,
+      ot_numero: ot.numero,
+      cotizacion_id: ot.cotizacion_id,
+      cotizacion_numero: ot.cotizacion_numero,
+      suscripcion_id: '',
+      mes_ciclo: '',
+      concepto: ot.descripcion || `OT N°${ot.numero}`,
+      monto: ot.monto,
+      estado_pago: 'pendiente',
+      estado_boleta: ot.emite_boleta ? 'pendiente' : 'no_aplica',
+      url_boleta: '',
+      notas: '',
+    }
+    const ref = doc(cobrosCol)
+    const numero = await asignarNumeroYCrear(ref, input)
+    result = { id: ref.id, numero, yaExistia: false }
   }
 
-  const input: CobroInput = {
-    cliente_id: ot.cliente_id,
-    cliente_nombre: ot.cliente_nombre,
-    origen: 'ot',
-    ot_id: ot.id,
-    ot_numero: ot.numero,
-    cotizacion_id: ot.cotizacion_id,
-    cotizacion_numero: ot.cotizacion_numero,
-    suscripcion_id: '',
-    mes_ciclo: '',
-    concepto: ot.descripcion || `OT N°${ot.numero}`,
-    monto: ot.monto,
-    estado_pago: 'pendiente',
-    estado_boleta: ot.emite_boleta ? 'pendiente' : 'no_aplica',
-    url_boleta: '',
-    notas: '',
-  }
-
-  const ref = doc(cobrosCol)
-  const numero = await asignarNumeroYCrear(ref, input)
-  return { id: ref.id, numero, yaExistia: false }
+  await marcarOtConCobro(ot.id, true)
+  return result
 }
 
 export async function crearCobroDesdeSuscripcion(
@@ -178,5 +187,7 @@ export async function cambiarEstadoBoleta(
 }
 
 export async function eliminarCobro(id: string): Promise<void> {
+  const cobro = await obtenerCobro(id)
+  if (cobro?.ot_id) await marcarOtConCobro(cobro.ot_id, false)
   await deleteDoc(doc(cobrosCol, id))
 }

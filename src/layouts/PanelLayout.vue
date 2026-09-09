@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterView, RouterLink, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
+import Logo from '@/components/Logo.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -25,7 +26,7 @@ async function handleLogout() {
 <template>
   <div class="min-h-svh grid grid-cols-[220px_1fr]">
     <aside class="flex flex-col gap-1 border-r bg-muted/30 p-4">
-      <p class="px-2 pb-3 text-sm font-semibold">ERP Octalink</p>
+      <Logo :width="150" class="mb-4 px-2" />
       <RouterLink
         v-for="item in nav"
         :key="item.to"

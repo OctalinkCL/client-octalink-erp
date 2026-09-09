@@ -17,13 +17,19 @@ export interface Ot {
   monto: number
   emite_boleta: boolean
   estado: EstadoOt
+  // Flag denormalizado: true cuando ya se generó un cobro desde esta OT.
+  // Lo maneja el sistema (cobranza.service), no el formulario.
+  cobro_generado: boolean
   notas: string
   creado_en: Timestamp | null
   actualizado_en: Timestamp | null
 }
 
-/** Lo que edita el formulario. El número lo pone el sistema. */
-export type OtInput = Omit<Ot, 'id' | 'numero' | 'creado_en' | 'actualizado_en'>
+/** Lo que edita el formulario. El número y `cobro_generado` los pone el sistema. */
+export type OtInput = Omit<
+  Ot,
+  'id' | 'numero' | 'cobro_generado' | 'creado_en' | 'actualizado_en'
+>
 
 export function otInputVacio(): OtInput {
   return {

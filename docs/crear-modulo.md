@@ -125,9 +125,17 @@ Referencia: [`src/modules/cotizaciones/`](../src/modules/cotizaciones).
 - **Acciones entre módulos** van en el composable del módulo dueño de la entidad
   que se crea: `useOts().generarDesdeCotizacion(c)`,
   `useCobranza().generarDesdeOt(ot)`. La vista importa el composable, nunca el service ajeno.
-- **Excepción: agregadores de solo lectura** (el Dashboard). `useDashboard` sí
-  importa los `listar*()` de varios services para cruzar en el cliente; para las
-  acciones reusa los composables dueños. Ver [`src/modules/dashboard/`](../src/modules/dashboard).
+- **Excepción: agregadores de solo lectura** (el Dashboard). `useDashboard` cruza
+  varias colecciones; para las acciones reusa los composables dueños. Su
+  `dashboard.service.ts` no lee colecciones enteras: hace queries de **campo
+  único** acotadas a lo accionable (`where('estado_pago','in',[...])`,
+  `where('fecha_pago','>=',inicioDeMes)`, etc.), sin índices compuestos, para que
+  el costo no crezca con el histórico. Ver [`src/modules/dashboard/`](../src/modules/dashboard).
+- **Flags denormalizados para "X sin Y".** Para no leer todos los hijos y cruzar,
+  el padre guarda un booleano: `cotizacion.ot_generada`, `ot.cobro_generado`. Se
+  pone `true` en `crearYDesde…` (idempotente, también si `yaExistia`) y se
+  vuelve `false` al `eliminar…` el hijo. El formulario nunca lo edita (va fuera
+  del `Input` type).
 - **Dependencias pesadas** (pdfmake ~815 kB gzip): `import()` dinámico dentro del
   handler, no import estático. Ver `pdf()` en `CobranzaView.vue`.
 

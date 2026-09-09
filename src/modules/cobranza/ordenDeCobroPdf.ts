@@ -2,6 +2,7 @@ import pdfMake from 'pdfmake/build/pdfmake'
 import vfs from 'pdfmake/build/vfs_fonts'
 import type { TDocumentDefinitions } from 'pdfmake/interfaces'
 import { formatoCLP } from '@/lib/formato'
+import { logoSvg } from '@/lib/logo'
 import { OCTALINK } from '@/lib/octalink'
 import type { Cobro } from './types'
 
@@ -21,9 +22,8 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
       {
         columns: [
           [
-            { text: OCTALINK.razon_social, style: 'marca' },
-            { text: `RUT ${OCTALINK.rut}`, color: '#666' },
-            { text: OCTALINK.email, color: '#666' },
+            { svg: logoSvg('#0e0e0e'), width: 132, margin: [0, 2, 0, 8] },
+            { text: OCTALINK.email, color: '#666', fontSize: 9 },
           ],
           [
             { text: 'ORDEN DE COBRO', style: 'titulo', alignment: 'right' },
@@ -70,7 +70,6 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
             ['Tipo de cuenta', b.tipo_cuenta],
             ['N° de cuenta', b.numero],
             ['Titular', b.titular],
-            ['RUT', b.rut_titular],
             ['Email', b.email],
           ],
         },
@@ -86,7 +85,6 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
       },
     ],
     styles: {
-      marca: { fontSize: 13, bold: true },
       titulo: { fontSize: 15, bold: true },
       label: { bold: true, color: '#444', margin: [0, 0, 0, 2] },
       monto: { fontSize: 14, bold: true },
