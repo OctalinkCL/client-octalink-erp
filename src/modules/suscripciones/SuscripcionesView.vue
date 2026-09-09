@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -33,12 +33,23 @@ const {
   cambiarEstado,
   eliminar,
 } = useSuscripciones()
-const { generarDesdeSuscripcion } = useCobranza()
+const { generarDesdeSuscripcion, cobrosSuscripcionDelMes } = useCobranza()
 
 const generandoCobro = ref('')
 const mesActual = mesCicloActual()
+// suscripcion_id -> { id, numero } del cobro de este mes, si ya existe
+const cobrosDelMes = ref<Map<string, { id: string; numero: number }>>(new Map())
 
-onMounted(cargar)
+async function cargarTodo() {
+  await cargar()
+  cobrosDelMes.value = await cobrosSuscripcionDelMes(mesActual)
+}
+
+onMounted(cargarTodo)
+
+function cobroDelMes(id: string) {
+  return cobrosDelMes.value.get(id)
+}
 
 function editar(s: Suscripcion) {
   router.push({ name: 'suscripcion-editar', params: { id: s.id } })
@@ -50,13 +61,16 @@ async function onEstado(s: Suscripcion, valor: unknown) {
 }
 
 async function generarCobroMes(s: Suscripcion) {
-  if (!window.confirm(`¿Generar el cobro de ${mesCicloLegible(mesActual)} para ${s.cliente_nombre}?`))
+  if (
+    !window.confirm(
+      `¿Generar el cobro de ${mesCicloLegible(mesActual)} para ${s.cliente_nombre}?`,
+    )
+  )
     return
   generandoCobro.value = s.id
   try {
-    const { id, numero, yaExistia } = await generarDesdeSuscripcion(s, mesActual)
-    if (yaExistia) window.alert(`Ya existe el cobro N°${numero} de este mes.`)
-    router.push({ name: 'cobro-editar', params: { id } })
+    const { id, numero } = await generarDesdeSuscripcion(s, mesActual)
+    cobrosDelMes.value = new Map(cobrosDelMes.value).set(s.id, { id, numero })
   } catch (e) {
     console.error(e)
     window.alert('No se pudo generar el cobro.')
@@ -100,15 +114,16 @@ async function borrar(s: Suscripcion) {
             <TableHead class="text-right">Monto / mes</TableHead>
             <TableHead class="w-16 text-center">Día</TableHead>
             <TableHead class="w-32">Estado</TableHead>
+            <TableHead class="w-52">Cobro de {{ mesCicloLegible(mesActual) }}</TableHead>
             <TableHead class="w-0"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow v-if="loading">
-            <TableCell colspan="6" class="text-center text-muted-foreground">Cargando…</TableCell>
+            <TableCell colspan="7" class="text-center text-muted-foreground">Cargando…</TableCell>
           </TableRow>
           <TableRow v-else-if="!suscripcionesFiltradas.length">
-            <TableCell colspan="6" class="text-center text-muted-foreground">
+            <TableCell colspan="7" class="text-center text-muted-foreground">
               Sin suscripciones.
             </TableCell>
           </TableRow>
@@ -125,16 +140,26 @@ async function borrar(s: Suscripcion) {
                 </SelectContent>
               </Select>
             </TableCell>
-            <TableCell class="whitespace-nowrap text-right">
+            <TableCell>
+              <span v-if="s.estado !== 'activa'" class="text-sm text-muted-foreground">—</span>
+              <RouterLink
+                v-else-if="cobroDelMes(s.id)"
+                :to="{ name: 'cobro-editar', params: { id: cobroDelMes(s.id)!.id } }"
+                class="text-sm text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-500"
+              >
+                ✓ Cobro N°{{ cobroDelMes(s.id)!.numero }}
+              </RouterLink>
               <Button
-                v-if="s.estado === 'activa'"
+                v-else
                 variant="outline"
                 size="sm"
                 :disabled="generandoCobro === s.id"
                 @click="generarCobroMes(s)"
               >
-                {{ generandoCobro === s.id ? 'Generando…' : 'Generar cobro del mes' }}
+                {{ generandoCobro === s.id ? 'Generando…' : 'Generar cobro' }}
               </Button>
+            </TableCell>
+            <TableCell class="whitespace-nowrap text-right">
               <Button variant="ghost" size="sm" @click="editar(s)">Editar</Button>
               <Button variant="ghost" size="sm" class="text-destructive" @click="borrar(s)">
                 Eliminar

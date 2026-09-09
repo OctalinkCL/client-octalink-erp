@@ -59,6 +59,27 @@ export async function cobroDeSuscripcionMes(
   return snap.empty ? null : ({ id: snap.docs[0].id, ...snap.docs[0].data() } as Cobro)
 }
 
+/**
+ * Cobros de suscripción de un mes de ciclo, indexados por `suscripcion_id`.
+ * Para saber de un vistazo qué suscripciones ya tienen el cobro del mes.
+ */
+export async function cobrosDeSuscripcionesDelMes(
+  mesCiclo: string,
+): Promise<Map<string, { id: string; numero: number }>> {
+  const snap = await getDocs(query(cobrosCol, where('mes_ciclo', '==', mesCiclo)))
+  const map = new Map<string, { id: string; numero: number }>()
+  for (const d of snap.docs) {
+    const data = d.data()
+    if (data.suscripcion_id) {
+      map.set(data.suscripcion_id as string, {
+        id: d.id,
+        numero: data.numero as number,
+      })
+    }
+  }
+  return map
+}
+
 // Asigna el correlativo en una transacción y crea el cobro.
 async function asignarNumeroYCrear(
   ref: DocumentReference,

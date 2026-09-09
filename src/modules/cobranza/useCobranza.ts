@@ -6,6 +6,7 @@ import {
   actualizarCobro,
   cambiarEstadoBoleta,
   cambiarEstadoPago,
+  cobrosDeSuscripcionesDelMes,
   crearCobro,
   crearCobroDesdeOt,
   crearCobroDesdeSuscripcion,
@@ -63,6 +64,10 @@ export function useCobranza() {
     return crearCobroDesdeSuscripcion(s, mesCiclo)
   }
 
+  function cobrosSuscripcionDelMes(mesCiclo: string) {
+    return cobrosDeSuscripcionesDelMes(mesCiclo)
+  }
+
   async function marcarPago(id: string, estado: EstadoPago, fecha: Date | null) {
     await cambiarEstadoPago(id, estado, fecha)
     await cargar()
@@ -90,6 +95,7 @@ export function useCobranza() {
     actualizar,
     generarDesdeOt,
     generarDesdeSuscripcion,
+    cobrosSuscripcionDelMes,
     marcarPago,
     marcarBoleta,
     eliminar,
