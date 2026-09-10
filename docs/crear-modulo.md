@@ -154,6 +154,17 @@ Referencia: [`src/modules/cotizaciones/`](../src/modules/cotizaciones).
   pone `true` en `crearYDesde…` (idempotente, también si `yaExistia`) y se
   vuelve `false` al `eliminar…` el hijo. El formulario nunca lo edita (va fuera
   del `Input` type).
+- **Asociación editable a otra entidad** (ej. `OtFormView` → "Cotización
+  asociada"): un `<Select>` con opción centinela `'__ninguna__'` (reka-ui no
+  acepta `value=""`). El picker filtra por cliente + `!flag_hijo` (más la
+  asociada actual). Al guardar, `actualizar…` en el service lee la versión
+  previa, compara el FK y prende/apaga el flag denormalizado en el viejo y el
+  nuevo padre. Cambiar el cliente limpia el FK si era de otro cliente.
+- **Herencia de valores al generar, no al asociar.** `crear…Desde…` puede
+  copiar un valor del origen como *default editable* (ej. `monto: c.total`).
+  Asociar a mano **nunca** pisa valores ya puestos.
+- **`origen`/`tipo` derivables:** si un campo se deduce de si un FK está o no
+  (`origen = cotizacion_id ? …`), no lo guardes — derivalo en la vista.
 - **Dependencias pesadas** (pdfmake ~815 kB gzip): `import()` dinámico dentro del
   handler, no import estático. Ver `pdf()` en `CobranzaView.vue`.
 

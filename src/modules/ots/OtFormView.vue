@@ -17,8 +17,11 @@ import { formatoCLP } from '@/lib/formato'
 import ClienteFormDialog from '@/modules/clientes/ClienteFormDialog.vue'
 import { useClientes } from '@/modules/clientes/useClientes'
 import type { ClienteInput } from '@/modules/clientes/types'
+import { useCotizaciones } from '@/modules/cotizaciones/useCotizaciones'
 import { useOts } from './useOts'
 import { ESTADOS_OT, otInputVacio, type EstadoOt, type OtInput } from './types'
+
+const NINGUNA = '__ninguna__'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,6 +30,7 @@ const id = computed(() => (route.params.id as string) || '')
 const esEdicion = computed(() => !!id.value)
 
 const { clientes, crear: crearCliente } = useClientes()
+const { cotizaciones } = useCotizaciones()
 const { obtener, crear, actualizar } = useOts()
 
 const form = reactive<OtInput>(otInputVacio())
@@ -36,6 +40,17 @@ const error = ref('')
 
 const dialogClienteAbierto = ref(false)
 const guardandoCliente = ref(false)
+
+// Cotizaciones del cliente elegido que aún no tienen OT, más la ya asociada.
+const cotizacionesDisponibles = computed(() =>
+  cotizaciones.value
+    .filter(
+      (q) =>
+        q.cliente_id === form.cliente_id &&
+        (!q.ot_generada || q.id === form.cotizacion_id),
+    )
+    .sort((a, b) => b.numero - a.numero),
+)
 
 onMounted(async () => {
   cargando.value = true
@@ -49,7 +64,6 @@ onMounted(async () => {
       Object.assign(form, {
         cliente_id: o.cliente_id,
         cliente_nombre: o.cliente_nombre,
-        origen: o.origen,
         cotizacion_id: o.cotizacion_id,
         cotizacion_numero: o.cotizacion_numero,
         descripcion: o.descripcion,
@@ -71,6 +85,23 @@ function seleccionarCliente(clienteId: string) {
   const c = clientes.value.find((x) => x.id === clienteId)
   form.cliente_id = clienteId
   form.cliente_nombre = c?.nombre ?? ''
+  // Si la cotización asociada era de otro cliente, se limpia.
+  const q = cotizaciones.value.find((x) => x.id === form.cotizacion_id)
+  if (q && q.cliente_id !== clienteId) {
+    form.cotizacion_id = ''
+    form.cotizacion_numero = null
+  }
+}
+
+function seleccionarCotizacion(valor: string) {
+  if (valor === NINGUNA) {
+    form.cotizacion_id = ''
+    form.cotizacion_numero = null
+    return
+  }
+  const q = cotizaciones.value.find((x) => x.id === valor)
+  form.cotizacion_id = valor
+  form.cotizacion_numero = q?.numero ?? null
 }
 
 async function onGuardarCliente(input: ClienteInput) {
@@ -133,10 +164,6 @@ async function guardar() {
     <div v-if="cargando" class="text-sm text-muted-foreground">Cargando…</div>
 
     <template v-else>
-      <p v-if="form.origen === 'cotizacion'" class="text-sm text-muted-foreground">
-        Generada desde la cotización N°{{ form.cotizacion_numero }}.
-      </p>
-
       <div class="grid gap-1.5">
         <Label>Cliente</Label>
         <div class="flex gap-2">
@@ -155,6 +182,26 @@ async function guardar() {
             ＋ Nuevo
           </Button>
         </div>
+      </div>
+
+      <div class="grid gap-1.5">
+        <Label>Cotización asociada</Label>
+        <Select
+          :model-value="form.cotizacion_id || NINGUNA"
+          :disabled="!form.cliente_id"
+          @update:model-value="(v) => seleccionarCotizacion(String(v))"
+        >
+          <SelectTrigger class="w-full">
+            <SelectValue :placeholder="form.cliente_id ? 'Ninguna' : 'Elige un cliente primero'" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem :value="NINGUNA">(ninguna)</SelectItem>
+            <SelectItem v-for="q in cotizacionesDisponibles" :key="q.id" :value="q.id">
+              N°{{ q.numero }} · {{ q.estado }} · {{ formatoCLP(q.total) }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <span class="text-sm text-muted-foreground">Opcional, solo como referencia.</span>
       </div>
 
       <div class="grid gap-1.5">

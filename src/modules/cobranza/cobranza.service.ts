@@ -22,9 +22,14 @@ import type { Cobro, CobroInput, EstadoBoleta, EstadoPago } from './types'
 const cobrosCol = collection(db, 'cobros')
 const contadorRef = doc(db, 'settings', 'cobros')
 
-function marcarOtConCobro(otId: string, valor: boolean) {
-  if (!otId) return Promise.resolve()
-  return updateDoc(doc(db, 'ots', otId), { cobro_generado: valor })
+async function marcarOtConCobro(otId: string, valor: boolean): Promise<void> {
+  if (!otId) return
+  try {
+    await updateDoc(doc(db, 'ots', otId), { cobro_generado: valor })
+  } catch (e) {
+    // La OT pudo haber sido borrada antes; entonces no hay flag que mantener.
+    if ((e as { code?: string }).code !== 'not-found') throw e
+  }
 }
 
 export async function listarCobros(): Promise<Cobro[]> {

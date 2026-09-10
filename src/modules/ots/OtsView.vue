@@ -104,7 +104,7 @@ async function generarCobro(o: Ot) {
             <TableCell>{{ o.cliente_nombre }}</TableCell>
             <TableCell class="max-w-[22ch] truncate">{{ o.descripcion }}</TableCell>
             <TableCell class="text-muted-foreground">
-              {{ o.origen === 'cotizacion' ? `Cotización N°${o.cotizacion_numero}` : 'Puntual' }}
+              {{ o.cotizacion_numero ? `Cotización N°${o.cotizacion_numero}` : 'Puntual' }}
             </TableCell>
             <TableCell class="text-right">{{ formatoCLP(o.monto) }}</TableCell>
             <TableCell>

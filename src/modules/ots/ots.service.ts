@@ -20,9 +20,14 @@ import type { EstadoOt, Ot, OtInput } from './types'
 const otsCol = collection(db, 'ots')
 const contadorRef = doc(db, 'settings', 'ots')
 
-function marcarCotizacionConOt(cotizacionId: string, valor: boolean) {
-  if (!cotizacionId) return Promise.resolve()
-  return updateDoc(doc(db, 'cotizaciones', cotizacionId), { ot_generada: valor })
+async function marcarCotizacionConOt(cotizacionId: string, valor: boolean): Promise<void> {
+  if (!cotizacionId) return
+  try {
+    await updateDoc(doc(db, 'cotizaciones', cotizacionId), { ot_generada: valor })
+  } catch (e) {
+    // La cotización pudo haber sido borrada antes; entonces no hay flag que mantener.
+    if ((e as { code?: string }).code !== 'not-found') throw e
+  }
 }
 
 export async function listarOts(): Promise<Ot[]> {
@@ -71,6 +76,7 @@ async function asignarNumeroYCrear(
 export async function crearOt(input: OtInput): Promise<{ id: string; numero: number }> {
   const ref = doc(otsCol)
   const numero = await asignarNumeroYCrear(ref, input)
+  if (input.cotizacion_id) await marcarCotizacionConOt(input.cotizacion_id, true)
   return { id: ref.id, numero }
 }
 
@@ -86,11 +92,10 @@ export async function crearOtDesdeCotizacion(
     const input: OtInput = {
       cliente_id: c.cliente_id,
       cliente_nombre: c.cliente_nombre,
-      origen: 'cotizacion',
       cotizacion_id: c.id,
       cotizacion_numero: c.numero,
-      descripcion: `Cotización N°${c.numero}`,
-      monto: c.total,
+      descripcion: '',
+      monto: c.total, // hereda el total de la cotización aceptada; editable
       emite_boleta: false,
       estado: 'pendiente',
       notas: '',
@@ -105,7 +110,16 @@ export async function crearOtDesdeCotizacion(
 }
 
 export async function actualizarOt(id: string, input: OtInput): Promise<void> {
+  const prev = await obtenerOt(id)
   await updateDoc(doc(otsCol, id), { ...input, actualizado_en: serverTimestamp() })
+
+  // Si cambió la cotización asociada, mantener el flag `ot_generada` al día.
+  const antes = prev?.cotizacion_id ?? ''
+  const ahora = input.cotizacion_id
+  if (antes !== ahora) {
+    if (antes) await marcarCotizacionConOt(antes, false)
+    if (ahora) await marcarCotizacionConOt(ahora, true)
+  }
 }
 
 export async function cambiarEstadoOt(id: string, estado: EstadoOt): Promise<void> {
