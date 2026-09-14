@@ -17,16 +17,19 @@ export interface Cotizacion {
   items: ItemCotizacion[]
   total: number
   estado: EstadoCotizacion
+  // Flag denormalizado: true cuando ya se generó una OT desde esta cotización.
+  // Lo maneja el sistema (ots.service), no el formulario.
+  ot_generada: boolean
   fecha: Timestamp | null
   notas: string
   creado_en: Timestamp | null
   actualizado_en: Timestamp | null
 }
 
-/** Lo que edita el formulario. El número y el total los pone el sistema. */
+/** Lo que edita el formulario. El número, el total y `ot_generada` los pone el sistema. */
 export type CotizacionInput = Omit<
   Cotizacion,
-  'id' | 'numero' | 'total' | 'fecha' | 'creado_en' | 'actualizado_en'
+  'id' | 'numero' | 'total' | 'ot_generada' | 'fecha' | 'creado_en' | 'actualizado_en'
 >
 
 export function itemVacio(): ItemCotizacion {

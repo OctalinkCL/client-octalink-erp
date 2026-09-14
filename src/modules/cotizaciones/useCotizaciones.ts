@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { Cotizacion, CotizacionInput, EstadoCotizacion } from './types'
 import {
   actualizarCotizacion,
@@ -9,11 +10,24 @@ import {
   obtenerCotizacion,
 } from './cotizaciones.service'
 
+const KEY = ['cotizaciones'] as const
+
 export function useCotizaciones() {
-  const cotizaciones = ref<Cotizacion[]>([])
-  const loading = ref(false)
-  const error = ref('')
+  const qc = useQueryClient()
   const busqueda = ref('')
+
+  const invalidar = () => {
+    qc.invalidateQueries({ queryKey: KEY })
+    qc.invalidateQueries({ queryKey: ['dashboard'] })
+  }
+
+  const query = useQuery({ queryKey: KEY, queryFn: listarCotizaciones })
+
+  const cotizaciones = computed(() => query.data.value ?? [])
+  const loading = computed(() => query.isPending.value)
+  const error = computed(() =>
+    query.error.value ? 'No se pudieron cargar las cotizaciones.' : '',
+  )
 
   const cotizacionesFiltradas = computed(() => {
     const q = busqueda.value.trim().toLowerCase()
@@ -25,40 +39,36 @@ export function useCotizaciones() {
     )
   })
 
-  async function cargar() {
-    loading.value = true
-    error.value = ''
-    try {
-      cotizaciones.value = await listarCotizaciones()
-    } catch (e) {
-      error.value = 'No se pudieron cargar las cotizaciones.'
-      console.error(e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const crearMut = useMutation({
+    mutationFn: (input: CotizacionInput) => crearCotizacion(input),
+    onSuccess: invalidar,
+  })
 
-  function obtener(id: string) {
-    return obtenerCotizacion(id)
-  }
+  const actualizarMut = useMutation({
+    mutationFn: (v: { id: string; input: CotizacionInput }) =>
+      actualizarCotizacion(v.id, v.input),
+    onSuccess: invalidar,
+  })
 
-  function crear(input: CotizacionInput) {
-    return crearCotizacion(input)
-  }
+  const estadoMut = useMutation({
+    mutationFn: (v: { id: string; estado: EstadoCotizacion }) =>
+      cambiarEstadoCotizacion(v.id, v.estado),
+    onSuccess: invalidar,
+  })
 
-  function actualizar(id: string, input: CotizacionInput) {
-    return actualizarCotizacion(id, input)
-  }
-
-  async function cambiarEstado(id: string, estado: EstadoCotizacion) {
-    await cambiarEstadoCotizacion(id, estado)
-    await cargar()
-  }
-
-  async function eliminar(id: string) {
-    await eliminarCotizacion(id)
-    await cargar()
-  }
+  const eliminarMut = useMutation({
+    mutationFn: (id: string) => eliminarCotizacion(id),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: KEY })
+      const prev = qc.getQueryData<Cotizacion[]>(KEY)
+      qc.setQueryData<Cotizacion[]>(KEY, (old = []) => old.filter((c) => c.id !== id))
+      return { prev }
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev)
+    },
+    onSettled: invalidar,
+  })
 
   return {
     cotizaciones,
@@ -66,11 +76,13 @@ export function useCotizaciones() {
     loading,
     error,
     busqueda,
-    cargar,
-    obtener,
-    crear,
-    actualizar,
-    cambiarEstado,
-    eliminar,
+    cargar: () => query.refetch(),
+    obtener: (id: string) => obtenerCotizacion(id),
+    crear: (input: CotizacionInput) => crearMut.mutateAsync(input),
+    actualizar: (id: string, input: CotizacionInput) =>
+      actualizarMut.mutateAsync({ id, input }),
+    cambiarEstado: (id: string, estado: EstadoCotizacion) =>
+      estadoMut.mutateAsync({ id, estado }),
+    eliminar: (id: string) => eliminarMut.mutateAsync(id),
   }
 }

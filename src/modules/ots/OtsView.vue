@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,13 +19,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { formatoCLP } from '@/lib/formato'
+import { useCobranza } from '@/modules/cobranza/useCobranza'
 import { useOts } from './useOts'
 import { ESTADOS_OT, type EstadoOt, type Ot } from './types'
 
 const router = useRouter()
-const { otsFiltradas, loading, error, busqueda, cargar, cambiarEstado, eliminar } = useOts()
+const { otsFiltradas, loading, error, busqueda, cambiarEstado, eliminar } = useOts()
+const { generarDesdeOt } = useCobranza()
 
-onMounted(cargar)
+const generandoCobro = ref('')
 
 function editar(o: Ot) {
   router.push({ name: 'ot-editar', params: { id: o.id } })
@@ -45,12 +47,27 @@ async function borrar(o: Ot) {
     window.alert('No se pudo eliminar.')
   }
 }
+
+async function generarCobro(o: Ot) {
+  if (!window.confirm(`¿Generar cobro desde la OT N°${o.numero}?`)) return
+  generandoCobro.value = o.id
+  try {
+    const { id, numero, yaExistia } = await generarDesdeOt(o)
+    if (yaExistia) window.alert(`Esta OT ya tiene el cobro N°${numero}.`)
+    router.push({ name: 'cobro-editar', params: { id } })
+  } catch (e) {
+    console.error(e)
+    window.alert('No se pudo generar el cobro.')
+  } finally {
+    generandoCobro.value = ''
+  }
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-semibold">OTs</h1>
+      <h1 class="text-2xl font-semibold">Órdenes de trabajo</h1>
       <Button @click="router.push({ name: 'ot-nueva' })">Nueva OT</Button>
     </div>
 
@@ -87,7 +104,7 @@ async function borrar(o: Ot) {
             <TableCell>{{ o.cliente_nombre }}</TableCell>
             <TableCell class="max-w-[22ch] truncate">{{ o.descripcion }}</TableCell>
             <TableCell class="text-muted-foreground">
-              {{ o.origen === 'cotizacion' ? `Cotización N°${o.cotizacion_numero}` : 'Puntual' }}
+              {{ o.cotizacion_numero ? `Cotización N°${o.cotizacion_numero}` : 'Puntual' }}
             </TableCell>
             <TableCell class="text-right">{{ formatoCLP(o.monto) }}</TableCell>
             <TableCell>
@@ -101,6 +118,15 @@ async function borrar(o: Ot) {
               </Select>
             </TableCell>
             <TableCell class="whitespace-nowrap text-right">
+              <Button
+                v-if="o.estado === 'completada'"
+                variant="outline"
+                size="sm"
+                :disabled="generandoCobro === o.id"
+                @click="generarCobro(o)"
+              >
+                {{ generandoCobro === o.id ? 'Generando…' : 'Generar cobro' }}
+              </Button>
               <Button variant="ghost" size="sm" @click="editar(o)">Editar</Button>
               <Button variant="ghost" size="sm" class="text-destructive" @click="borrar(o)">
                 Eliminar

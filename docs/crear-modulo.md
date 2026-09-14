@@ -43,14 +43,32 @@ src/modules/<modulo>/
 - `eliminar<Modulo>(id)` → `deleteDoc`.
 - Sin `try/catch` acá: los errores suben al composable.
 
-### 3. `use<Modulo>.ts`
+### 3. `use<Modulo>.ts` — con TanStack Query
 
-- Estado: `items` (`ref<X[]>([])`), `loading`, `error`, `busqueda`.
-- `itemsFiltrados` = `computed` que filtra por `busqueda` sobre los campos de texto.
-- `cargar()` → setea `loading`, llama al service, captura error en `error.value` +
-  `console.error(e)`, baja `loading` en `finally`.
-- `crear/actualizar/eliminar` → llaman al service y luego `await cargar()`
-  (refresco simple; `onSnapshot` es un upgrade posterior si hace falta).
+El composable envuelve `useQuery` (lista) + `useMutation` (acciones). Referencia:
+[`useClientes.ts`](../src/modules/clientes/useClientes.ts).
+
+- `const KEY = ['<modulo>'] as const`.
+- `useQuery({ queryKey: KEY, queryFn: listar<Modulo>s })`.
+- Expone: `items = computed(() => query.data.value ?? [])`,
+  `loading = computed(() => query.isPending.value)`,
+  `error = computed(() => query.error.value ? '<mensaje>' : '')`,
+  `busqueda` (ref local), `itemsFiltrados` (computed).
+- **Mutaciones**: `useMutation({ mutationFn, onSuccess: invalidar })`. `invalidar`
+  hace `qc.invalidateQueries({ queryKey: KEY })` **más las keys afectadas**
+  (`['dashboard']` casi siempre; `['cotizaciones']` si tocás el flag `ot_generada`,
+  `['ots']` si tocás `cobro_generado`, `['cobros-mes']` al generar cobro de suscripción).
+- **Delete optimista**: `onMutate` cancela la query, guarda `prev`, quita la fila
+  del cache (`setQueryData`); `onError` restaura `prev`; `onSettled` invalida.
+- El composable devuelve funciones que llaman `mutateAsync(...)`, con la **misma
+  firma** que antes (`crear(input)`, `actualizar(id, input)`, `eliminar(id)`), para
+  que las vistas no cambien.
+- `obtener(id)` NO es query: pasa derecho al service (lo usa el form de edición).
+- Las vistas **no** llaman `onMounted(cargar)` — la query carga sola al montar.
+  `cargar` (= `query.refetch`) solo se expone para un botón "Actualizar".
+
+Defaults del `QueryClient` (en `main.ts`): `staleTime` 60s,
+`refetchOnWindowFocus: false`.
 
 ### 4. `<Modulo>FormDialog.vue`
 
@@ -117,6 +135,38 @@ Referencia: [`src/modules/cotizaciones/`](../src/modules/cotizaciones).
 - **Fechas:** `serverTimestamp()` al escribir; en el tipo son `Timestamp | null`.
 - **shadcn-vue:** agregar componentes con `pnpm dlx shadcn-vue@latest add <x>`, no a mano.
 - **Sin store (Pinia)** salvo estado global real. Un módulo = un composable.
+- **Relaciones = back-references opcionales.** Una entidad guarda punteros a su
+  origen directo (`ot_id`, `cotizacion_id`, `suscripcion_id`, …), siempre
+  opcionales (`''` / `null`). El relato completo se recorre en la vista de
+  detalle; no se denormaliza la cadena entera. Ver `cobros` en
+  [`src/modules/cobranza/types.ts`](../src/modules/cobranza/types.ts).
+- **Acciones entre módulos** van en el composable del módulo dueño de la entidad
+  que se crea: `useOts().generarDesdeCotizacion(c)`,
+  `useCobranza().generarDesdeOt(ot)`. La vista importa el composable, nunca el service ajeno.
+- **Excepción: agregadores de solo lectura** (el Dashboard). `useDashboard` cruza
+  varias colecciones; para las acciones reusa los composables dueños. Su
+  `dashboard.service.ts` no lee colecciones enteras: hace queries de **campo
+  único** acotadas a lo accionable (`where('estado_pago','in',[...])`,
+  `where('fecha_pago','>=',inicioDeMes)`, etc.), sin índices compuestos, para que
+  el costo no crezca con el histórico. Ver [`src/modules/dashboard/`](../src/modules/dashboard).
+- **Flags denormalizados para "X sin Y".** Para no leer todos los hijos y cruzar,
+  el padre guarda un booleano: `cotizacion.ot_generada`, `ot.cobro_generado`. Se
+  pone `true` en `crearYDesde…` (idempotente, también si `yaExistia`) y se
+  vuelve `false` al `eliminar…` el hijo. El formulario nunca lo edita (va fuera
+  del `Input` type).
+- **Asociación editable a otra entidad** (ej. `OtFormView` → "Cotización
+  asociada"): un `<Select>` con opción centinela `'__ninguna__'` (reka-ui no
+  acepta `value=""`). El picker filtra por cliente + `!flag_hijo` (más la
+  asociada actual). Al guardar, `actualizar…` en el service lee la versión
+  previa, compara el FK y prende/apaga el flag denormalizado en el viejo y el
+  nuevo padre. Cambiar el cliente limpia el FK si era de otro cliente.
+- **Herencia de valores al generar, no al asociar.** `crear…Desde…` puede
+  copiar un valor del origen como *default editable* (ej. `monto: c.total`).
+  Asociar a mano **nunca** pisa valores ya puestos.
+- **`origen`/`tipo` derivables:** si un campo se deduce de si un FK está o no
+  (`origen = cotizacion_id ? …`), no lo guardes — derivalo en la vista.
+- **Dependencias pesadas** (pdfmake ~815 kB gzip): `import()` dinámico dentro del
+  handler, no import estático. Ver `pdf()` en `CobranzaView.vue`.
 
 ## Checklist
 

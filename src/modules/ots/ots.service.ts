@@ -20,6 +20,16 @@ import type { EstadoOt, Ot, OtInput } from './types'
 const otsCol = collection(db, 'ots')
 const contadorRef = doc(db, 'settings', 'ots')
 
+async function marcarCotizacionConOt(cotizacionId: string, valor: boolean): Promise<void> {
+  if (!cotizacionId) return
+  try {
+    await updateDoc(doc(db, 'cotizaciones', cotizacionId), { ot_generada: valor })
+  } catch (e) {
+    // La cotización pudo haber sido borrada antes; entonces no hay flag que mantener.
+    if ((e as { code?: string }).code !== 'not-found') throw e
+  }
+}
+
 export async function listarOts(): Promise<Ot[]> {
   const snap = await getDocs(query(otsCol, orderBy('numero', 'desc')))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Ot)
@@ -53,6 +63,7 @@ async function asignarNumeroYCrear(
     tx.set(ref, {
       ...input,
       numero: siguiente,
+      cobro_generado: false,
       creado_en: serverTimestamp(),
       actualizado_en: serverTimestamp(),
     })
@@ -65,6 +76,7 @@ async function asignarNumeroYCrear(
 export async function crearOt(input: OtInput): Promise<{ id: string; numero: number }> {
   const ref = doc(otsCol)
   const numero = await asignarNumeroYCrear(ref, input)
+  if (input.cotizacion_id) await marcarCotizacionConOt(input.cotizacion_id, true)
   return { id: ref.id, numero }
 }
 
@@ -72,30 +84,42 @@ export async function crearOtDesdeCotizacion(
   c: Cotizacion,
 ): Promise<{ id: string; numero: number; yaExistia: boolean }> {
   const existente = await otDeCotizacion(c.id)
+
+  let result: { id: string; numero: number; yaExistia: boolean }
   if (existente) {
-    return { id: existente.id, numero: existente.numero, yaExistia: true }
+    result = { id: existente.id, numero: existente.numero, yaExistia: true }
+  } else {
+    const input: OtInput = {
+      cliente_id: c.cliente_id,
+      cliente_nombre: c.cliente_nombre,
+      cotizacion_id: c.id,
+      cotizacion_numero: c.numero,
+      descripcion: '',
+      monto: c.total, // hereda el total de la cotización aceptada; editable
+      emite_boleta: false,
+      estado: 'pendiente',
+      notas: '',
+    }
+    const ref = doc(otsCol)
+    const numero = await asignarNumeroYCrear(ref, input)
+    result = { id: ref.id, numero, yaExistia: false }
   }
 
-  const input: OtInput = {
-    cliente_id: c.cliente_id,
-    cliente_nombre: c.cliente_nombre,
-    origen: 'cotizacion',
-    cotizacion_id: c.id,
-    cotizacion_numero: c.numero,
-    descripcion: `Cotización N°${c.numero}`,
-    monto: c.total,
-    emite_boleta: false,
-    estado: 'pendiente',
-    notas: '',
-  }
-
-  const ref = doc(otsCol)
-  const numero = await asignarNumeroYCrear(ref, input)
-  return { id: ref.id, numero, yaExistia: false }
+  await marcarCotizacionConOt(c.id, true)
+  return result
 }
 
 export async function actualizarOt(id: string, input: OtInput): Promise<void> {
+  const prev = await obtenerOt(id)
   await updateDoc(doc(otsCol, id), { ...input, actualizado_en: serverTimestamp() })
+
+  // Si cambió la cotización asociada, mantener el flag `ot_generada` al día.
+  const antes = prev?.cotizacion_id ?? ''
+  const ahora = input.cotizacion_id
+  if (antes !== ahora) {
+    if (antes) await marcarCotizacionConOt(antes, false)
+    if (ahora) await marcarCotizacionConOt(ahora, true)
+  }
 }
 
 export async function cambiarEstadoOt(id: string, estado: EstadoOt): Promise<void> {
@@ -103,5 +127,7 @@ export async function cambiarEstadoOt(id: string, estado: EstadoOt): Promise<voi
 }
 
 export async function eliminarOt(id: string): Promise<void> {
+  const ot = await obtenerOt(id)
+  if (ot?.cotizacion_id) await marcarCotizacionConOt(ot.cotizacion_id, false)
   await deleteDoc(doc(otsCol, id))
 }

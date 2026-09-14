@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { Cliente, ClienteInput } from './types'
 import {
   actualizarCliente,
@@ -7,15 +8,17 @@ import {
   listarClientes,
 } from './clientes.service'
 
-/**
- * Estado reactivo de la lista de clientes. Los componentes usan esto;
- * nunca importan firebase/firestore directo.
- */
+const KEY = ['clientes'] as const
+
 export function useClientes() {
-  const clientes = ref<Cliente[]>([])
-  const loading = ref(false)
-  const error = ref('')
+  const qc = useQueryClient()
   const busqueda = ref('')
+
+  const query = useQuery({ queryKey: KEY, queryFn: listarClientes })
+
+  const clientes = computed(() => query.data.value ?? [])
+  const loading = computed(() => query.isPending.value)
+  const error = computed(() => (query.error.value ? 'No se pudieron cargar los clientes.' : ''))
 
   const clientesFiltrados = computed(() => {
     const q = busqueda.value.trim().toLowerCase()
@@ -25,34 +28,29 @@ export function useClientes() {
     )
   })
 
-  async function cargar() {
-    loading.value = true
-    error.value = ''
-    try {
-      clientes.value = await listarClientes()
-    } catch (e) {
-      error.value = 'No se pudieron cargar los clientes.'
-      console.error(e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const crearMut = useMutation({
+    mutationFn: (input: ClienteInput) => crearCliente(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
 
-  async function crear(input: ClienteInput) {
-    const id = await crearCliente(input)
-    await cargar()
-    return id
-  }
+  const actualizarMut = useMutation({
+    mutationFn: (v: { id: string; input: ClienteInput }) => actualizarCliente(v.id, v.input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
 
-  async function actualizar(id: string, input: ClienteInput) {
-    await actualizarCliente(id, input)
-    await cargar()
-  }
-
-  async function eliminar(id: string) {
-    await eliminarCliente(id)
-    await cargar()
-  }
+  const eliminarMut = useMutation({
+    mutationFn: (id: string) => eliminarCliente(id),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: KEY })
+      const prev = qc.getQueryData<Cliente[]>(KEY)
+      qc.setQueryData<Cliente[]>(KEY, (old = []) => old.filter((c) => c.id !== id))
+      return { prev }
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
 
   return {
     clientes,
@@ -60,9 +58,9 @@ export function useClientes() {
     loading,
     error,
     busqueda,
-    cargar,
-    crear,
-    actualizar,
-    eliminar,
+    cargar: () => query.refetch(),
+    crear: (input: ClienteInput) => crearMut.mutateAsync(input),
+    actualizar: (id: string, input: ClienteInput) => actualizarMut.mutateAsync({ id, input }),
+    eliminar: (id: string) => eliminarMut.mutateAsync(id),
   }
 }

@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// ERP interno de Octalink. Un solo usuario (JuanAndrés): todo el acceso está
+// amarrado a su UID de Firebase Auth.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null
+        && request.auth.uid == 'nFCr8TpWRyOVxzY3ikHOXcCoojV2';
+    }
+
+    match /clientes/{id}      { allow read, write: if isOwner(); }
+    match /ots/{id}           { allow read, write: if isOwner(); }
+    match /cobros/{id}        { allow read, write: if isOwner(); }
+    match /suscripciones/{id} { allow read, write: if isOwner(); }
+    match /settings/{id}      { allow read, write: if isOwner(); }
+
+    match /cotizaciones/{id} {
+      allow read, write: if isOwner();
+      // Futuro link público de cotización: aquí irá un `allow get: if true;`
+      // (la llave es el ID random del doc) y un `allow update` acotado a
+      // ['estado','respondida_en','comentario_cliente'] para que el cliente
+      // acepte/rechace sin sesión. Sacar antes las notas internas del doc.
+    }
+
+    // Cualquier otra ruta queda denegada por defecto (Firestore rules v2).
+  }
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,22 +14,12 @@ import ClienteFormDialog from './ClienteFormDialog.vue'
 import { useClientes } from './useClientes'
 import type { Cliente, ClienteInput } from './types'
 
-const {
-  clientesFiltrados,
-  loading,
-  error,
-  busqueda,
-  cargar,
-  crear,
-  actualizar,
-  eliminar,
-} = useClientes()
+const { clientesFiltrados, loading, error, busqueda, crear, actualizar, eliminar } =
+  useClientes()
 
 const dialogAbierto = ref(false)
 const clienteEditando = ref<Cliente | null>(null)
 const guardando = ref(false)
-
-onMounted(cargar)
 
 function nuevo() {
   clienteEditando.value = null

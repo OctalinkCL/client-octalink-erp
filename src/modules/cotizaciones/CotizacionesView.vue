@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,20 +24,11 @@ import { useCotizaciones } from './useCotizaciones'
 import { ESTADOS_COTIZACION, type Cotizacion, type EstadoCotizacion } from './types'
 
 const router = useRouter()
-const {
-  cotizacionesFiltradas,
-  loading,
-  error,
-  busqueda,
-  cargar,
-  cambiarEstado,
-  eliminar,
-} = useCotizaciones()
+const { cotizacionesFiltradas, loading, error, busqueda, cambiarEstado, eliminar } =
+  useCotizaciones()
 const { generarDesdeCotizacion } = useOts()
 
 const generandoOt = ref('')
-
-onMounted(cargar)
 
 function editar(c: Cotizacion) {
   router.push({ name: 'cotizacion-editar', params: { id: c.id } })

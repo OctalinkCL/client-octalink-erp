@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { Cotizacion } from '@/modules/cotizaciones/types'
 import type { EstadoOt, Ot, OtInput } from './types'
 import {
@@ -11,11 +12,24 @@ import {
   obtenerOt,
 } from './ots.service'
 
+const KEY = ['ots'] as const
+
 export function useOts() {
-  const ots = ref<Ot[]>([])
-  const loading = ref(false)
-  const error = ref('')
+  const qc = useQueryClient()
   const busqueda = ref('')
+
+  // Un cambio en OTs también afecta cotizaciones (flag ot_generada) y el dashboard.
+  const invalidar = () => {
+    qc.invalidateQueries({ queryKey: KEY })
+    qc.invalidateQueries({ queryKey: ['cotizaciones'] })
+    qc.invalidateQueries({ queryKey: ['dashboard'] })
+  }
+
+  const query = useQuery({ queryKey: KEY, queryFn: listarOts })
+
+  const ots = computed(() => query.data.value ?? [])
+  const loading = computed(() => query.isPending.value)
+  const error = computed(() => (query.error.value ? 'No se pudieron cargar las OTs.' : ''))
 
   const otsFiltradas = computed(() => {
     const q = busqueda.value.trim().toLowerCase()
@@ -27,44 +41,39 @@ export function useOts() {
     )
   })
 
-  async function cargar() {
-    loading.value = true
-    error.value = ''
-    try {
-      ots.value = await listarOts()
-    } catch (e) {
-      error.value = 'No se pudieron cargar las OTs.'
-      console.error(e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const crearMut = useMutation({
+    mutationFn: (input: OtInput) => crearOt(input),
+    onSuccess: invalidar,
+  })
 
-  function obtener(id: string) {
-    return obtenerOt(id)
-  }
+  const actualizarMut = useMutation({
+    mutationFn: (v: { id: string; input: OtInput }) => actualizarOt(v.id, v.input),
+    onSuccess: invalidar,
+  })
 
-  function crear(input: OtInput) {
-    return crearOt(input)
-  }
+  const estadoMut = useMutation({
+    mutationFn: (v: { id: string; estado: EstadoOt }) => cambiarEstadoOt(v.id, v.estado),
+    onSuccess: invalidar,
+  })
 
-  function actualizar(id: string, input: OtInput) {
-    return actualizarOt(id, input)
-  }
+  const generarMut = useMutation({
+    mutationFn: (c: Cotizacion) => crearOtDesdeCotizacion(c),
+    onSuccess: invalidar,
+  })
 
-  function generarDesdeCotizacion(c: Cotizacion) {
-    return crearOtDesdeCotizacion(c)
-  }
-
-  async function cambiarEstado(id: string, estado: EstadoOt) {
-    await cambiarEstadoOt(id, estado)
-    await cargar()
-  }
-
-  async function eliminar(id: string) {
-    await eliminarOt(id)
-    await cargar()
-  }
+  const eliminarMut = useMutation({
+    mutationFn: (id: string) => eliminarOt(id),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: KEY })
+      const prev = qc.getQueryData<Ot[]>(KEY)
+      qc.setQueryData<Ot[]>(KEY, (old = []) => old.filter((o) => o.id !== id))
+      return { prev }
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev)
+    },
+    onSettled: invalidar,
+  })
 
   return {
     ots,
@@ -72,12 +81,12 @@ export function useOts() {
     loading,
     error,
     busqueda,
-    cargar,
-    obtener,
-    crear,
-    actualizar,
-    generarDesdeCotizacion,
-    cambiarEstado,
-    eliminar,
+    cargar: () => query.refetch(),
+    obtener: (id: string) => obtenerOt(id),
+    crear: (input: OtInput) => crearMut.mutateAsync(input),
+    actualizar: (id: string, input: OtInput) => actualizarMut.mutateAsync({ id, input }),
+    cambiarEstado: (id: string, estado: EstadoOt) => estadoMut.mutateAsync({ id, estado }),
+    generarDesdeCotizacion: (c: Cotizacion) => generarMut.mutateAsync(c),
+    eliminar: (id: string) => eliminarMut.mutateAsync(id),
   }
 }

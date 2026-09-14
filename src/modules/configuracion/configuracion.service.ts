@@ -2,7 +2,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 // settings/<clave> → { siguiente_numero: number }
-export type ClaveContador = 'cotizaciones' | 'ots'
+export type ClaveContador = 'cotizaciones' | 'ots' | 'cobros'
 
 export async function obtenerSiguienteNumero(clave: ClaveContador): Promise<number> {
   const snap = await getDoc(doc(db, 'settings', clave))

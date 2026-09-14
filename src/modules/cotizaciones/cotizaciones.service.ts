@@ -52,6 +52,7 @@ export async function crearCotizacion(
       ...input,
       numero: siguiente,
       total: calcularTotal(input.items),
+      ot_generada: false,
       fecha: serverTimestamp(),
       creado_en: serverTimestamp(),
       actualizado_en: serverTimestamp(),
