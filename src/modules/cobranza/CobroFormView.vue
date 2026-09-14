@@ -21,11 +21,15 @@ import {
   ESTADOS_BOLETA,
   ESTADOS_PAGO,
   LABEL_ESTADO_BOLETA,
+  LABEL_EVENTO_COBRO,
   cobroInputVacio,
   type CobroInput,
   type EstadoBoleta,
   type EstadoPago,
+  type EventoCobro,
 } from './types'
+
+const formatoFecha = new Intl.DateTimeFormat('es-CL', { dateStyle: 'medium', timeStyle: 'short' })
 
 const route = useRoute()
 const router = useRouter()
@@ -38,10 +42,15 @@ const { obtener, crear, actualizar, marcarPago } = useCobranza()
 
 const form = reactive<CobroInput>(cobroInputVacio())
 const fechaPago = ref('') // 'YYYY-MM-DD'
+const historial = ref<EventoCobro[]>([])
 const cargando = ref(false)
 const guardando = ref(false)
 const enviando = ref(false)
 const error = ref('')
+
+const yaEnviado = computed(() =>
+  historial.value.some((h) => h.tipo === 'enviado' || h.tipo === 'reenviado'),
+)
 
 const dialogClienteAbierto = ref(false)
 const guardandoCliente = ref(false)
@@ -76,6 +85,7 @@ onMounted(async () => {
         url_boleta: c.url_boleta,
         notas: c.notas,
       })
+      historial.value = c.historial ?? []
       if (c.fecha_pago) {
         const d = c.fecha_pago.toDate()
         fechaPago.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -166,14 +176,19 @@ async function descargarPdf() {
 }
 
 async function enviarCorreo() {
-  if (!window.confirm('¿Enviar este cobro por correo al cliente?')) return
+  const verbo = yaEnviado.value ? 'Reenviar' : 'Enviar'
+  if (!window.confirm(`¿${verbo} este cobro por correo al cliente?`)) return
   enviando.value = true
   try {
     const c = await obtener(id.value)
     if (!c) return
     const { enviarCobro } = await import('./enviarCobro')
     await enviarCobro(c)
-    form.estado_pago = 'enviado'
+    const actualizado = await obtener(id.value)
+    if (actualizado) {
+      form.estado_pago = actualizado.estado_pago
+      historial.value = actualizado.historial ?? []
+    }
   } catch (e) {
     console.error(e)
     window.alert(e instanceof Error ? e.message : 'No se pudo enviar el correo.')
@@ -288,14 +303,23 @@ async function enviarCorreo() {
           Descargar Orden de Cobro
         </Button>
         <Button
-          v-if="esEdicion && form.estado_pago === 'pendiente'"
+          v-if="esEdicion && form.estado_pago !== 'pagado'"
           type="button"
           variant="outline"
           :disabled="enviando"
           @click="enviarCorreo"
         >
-          {{ enviando ? 'Enviando…' : 'Enviar por correo' }}
+          {{ enviando ? 'Enviando…' : yaEnviado ? 'Reenviar por correo' : 'Enviar por correo' }}
         </Button>
+      </div>
+
+      <div v-if="esEdicion && historial.length" class="grid gap-1.5">
+        <Label>Historial</Label>
+        <ul class="flex flex-col gap-1 text-sm text-muted-foreground">
+          <li v-for="(h, i) in historial" :key="i">
+            {{ LABEL_EVENTO_COBRO[h.tipo] }} — {{ formatoFecha.format(h.fecha.toDate()) }}
+          </li>
+        </ul>
       </div>
     </template>
 
