@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { FileTextIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -32,7 +35,25 @@ const router = useRouter()
 const { cobrosFiltrados, loading, error, busqueda, marcarPago, marcarBoleta, eliminar } =
   useCobranza()
 
-function editar(c: Cobro) {
+const CLASE_PAGO: Record<EstadoPago, string> = {
+  pendiente: 'bg-muted text-muted-foreground',
+  enviado: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  pagado: 'bg-green-500/10 text-green-600 dark:text-green-400',
+}
+const CLASE_BOLETA: Record<EstadoBoleta, string> = {
+  no_aplica: 'bg-muted text-muted-foreground',
+  pendiente: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  enviada: 'bg-green-500/10 text-green-600 dark:text-green-400',
+}
+
+const editandoId = ref<string | null>(null)
+const enEdicion = (c: Cobro) => editandoId.value === c.id
+
+function toggleEdicion(c: Cobro) {
+  editandoId.value = enEdicion(c) ? null : c.id
+}
+
+function verDetalle(c: Cobro) {
   router.push({ name: 'cobro-editar', params: { id: c.id } })
 }
 
@@ -98,20 +119,35 @@ async function borrar(c: Cobro) {
             <TableCell colspan="7" class="text-center text-muted-foreground">Sin cobros.</TableCell>
           </TableRow>
           <TableRow v-for="c in cobrosFiltrados" v-else :key="c.id">
-            <TableCell class="font-medium">{{ c.numero }}</TableCell>
+            <TableCell class="font-medium">
+              <button type="button" class="hover:underline" @click="verDetalle(c)">
+                {{ c.numero }}
+              </button>
+            </TableCell>
             <TableCell>{{ c.cliente_nombre }}</TableCell>
             <TableCell class="max-w-[24ch] truncate">{{ c.concepto }}</TableCell>
             <TableCell class="text-right">{{ formatoCLP(c.monto) }}</TableCell>
             <TableCell>
-              <Select :model-value="c.estado_pago" @update:model-value="(v) => onPago(c, v)">
+              <Select
+                v-if="enEdicion(c)"
+                :model-value="c.estado_pago"
+                @update:model-value="(v) => onPago(c, v)"
+              >
                 <SelectTrigger class="h-7 w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
                 </SelectContent>
               </Select>
+              <Badge v-else class="capitalize" :class="CLASE_PAGO[c.estado_pago]">
+                {{ c.estado_pago }}
+              </Badge>
             </TableCell>
             <TableCell>
-              <Select :model-value="c.estado_boleta" @update:model-value="(v) => onBoleta(c, v)">
+              <Select
+                v-if="enEdicion(c)"
+                :model-value="c.estado_boleta"
+                @update:model-value="(v) => onBoleta(c, v)"
+              >
                 <SelectTrigger class="h-7 w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="e in ESTADOS_BOLETA" :key="e" :value="e">
@@ -119,12 +155,38 @@ async function borrar(c: Cobro) {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <Badge v-else :class="CLASE_BOLETA[c.estado_boleta]">
+                {{ LABEL_ESTADO_BOLETA[c.estado_boleta] }}
+              </Badge>
             </TableCell>
             <TableCell class="whitespace-nowrap text-right">
-              <Button variant="ghost" size="sm" @click="pdf(c)">PDF</Button>
-              <Button variant="ghost" size="sm" @click="editar(c)">Editar</Button>
-              <Button variant="ghost" size="sm" class="text-destructive" @click="borrar(c)">
-                Eliminar
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Descargar PDF"
+                aria-label="Descargar PDF"
+                @click="pdf(c)"
+              >
+                <FileTextIcon />
+              </Button>
+              <Button
+                :variant="enEdicion(c) ? 'secondary' : 'ghost'"
+                size="icon-sm"
+                title="Editar estado"
+                aria-label="Editar estado"
+                @click="toggleEdicion(c)"
+              >
+                <PencilIcon />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                class="text-destructive"
+                title="Eliminar"
+                aria-label="Eliminar"
+                @click="borrar(c)"
+              >
+                <Trash2Icon />
               </Button>
             </TableCell>
           </TableRow>
