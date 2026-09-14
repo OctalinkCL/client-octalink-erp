@@ -8,6 +8,21 @@ export type EstadoBoleta = (typeof ESTADOS_BOLETA)[number]
 
 export type OrigenCobro = 'ot' | 'suscripcion' | 'directo'
 
+export const TIPOS_EVENTO_COBRO = ['creado', 'enviado', 'reenviado', 'pagado'] as const
+export type TipoEventoCobro = (typeof TIPOS_EVENTO_COBRO)[number]
+
+export interface EventoCobro {
+  tipo: TipoEventoCobro
+  fecha: Timestamp
+}
+
+export const LABEL_EVENTO_COBRO: Record<TipoEventoCobro, string> = {
+  creado: 'Creado',
+  enviado: 'Enviado',
+  reenviado: 'Reenviado',
+  pagado: 'Pagado',
+}
+
 export interface Cobro {
   id: string
   numero: number
@@ -28,14 +43,15 @@ export interface Cobro {
   fecha_pago: Timestamp | null
   url_boleta: string
   notas: string
+  historial: EventoCobro[]
   creado_en: Timestamp | null
   actualizado_en: Timestamp | null
 }
 
-/** Lo que edita el formulario de cobro directo. El número lo pone el sistema. */
+/** Lo que edita el formulario de cobro directo. El número y el historial los pone el sistema. */
 export type CobroInput = Omit<
   Cobro,
-  'id' | 'numero' | 'fecha_pago' | 'creado_en' | 'actualizado_en'
+  'id' | 'numero' | 'fecha_pago' | 'historial' | 'creado_en' | 'actualizado_en'
 >
 
 export function cobroInputVacio(): CobroInput {

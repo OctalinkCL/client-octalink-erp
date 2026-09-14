@@ -1,5 +1,7 @@
 import {
   type DocumentReference,
+  Timestamp,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -17,7 +19,7 @@ import { db } from '@/lib/firebase'
 import { mesCicloLegible } from '@/lib/formato'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
-import type { Cobro, CobroInput, EstadoBoleta, EstadoPago } from './types'
+import type { Cobro, CobroInput, EstadoBoleta, EstadoPago, TipoEventoCobro } from './types'
 
 const cobrosCol = collection(db, 'cobros')
 const contadorRef = doc(db, 'settings', 'cobros')
@@ -101,6 +103,7 @@ async function asignarNumeroYCrear(
       ...input,
       numero: siguiente,
       fecha_pago: null,
+      historial: [{ tipo: 'creado', fecha: Timestamp.now() }],
       creado_en: serverTimestamp(),
       actualizado_en: serverTimestamp(),
     })
@@ -192,9 +195,25 @@ export async function cambiarEstadoPago(
   estado_pago: EstadoPago,
   fecha_pago: Date | null,
 ): Promise<void> {
-  await updateDoc(doc(cobrosCol, id), {
+  const patch: Record<string, unknown> = {
     estado_pago,
     fecha_pago: estado_pago === 'pagado' ? (fecha_pago ?? new Date()) : null,
+    actualizado_en: serverTimestamp(),
+  }
+  if (estado_pago === 'pagado') {
+    patch.historial = arrayUnion({ tipo: 'pagado', fecha: Timestamp.now() })
+  }
+  await updateDoc(doc(cobrosCol, id), patch)
+}
+
+/** Registra un envío (o reenvío) de correo en el historial. El estado de pago queda 'enviado' sin importar cuántas veces se mande. */
+export async function registrarEnvioCobro(
+  id: string,
+  tipo: Extract<TipoEventoCobro, 'enviado' | 'reenviado'>,
+): Promise<void> {
+  await updateDoc(doc(cobrosCol, id), {
+    estado_pago: 'enviado',
+    historial: arrayUnion({ tipo, fecha: Timestamp.now() }),
     actualizado_en: serverTimestamp(),
   })
 }

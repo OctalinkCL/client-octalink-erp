@@ -87,8 +87,13 @@ async function pdf(c: Cobro) {
   descargarOrdenDeCobro(c)
 }
 
+function yaEnviado(c: Cobro): boolean {
+  return (c.historial ?? []).some((h) => h.tipo === 'enviado' || h.tipo === 'reenviado')
+}
+
 async function enviar(c: Cobro) {
-  if (!window.confirm(`¿Enviar el cobro N°${c.numero} por correo al cliente?`)) return
+  const verbo = yaEnviado(c) ? 'Reenviar' : 'Enviar'
+  if (!window.confirm(`¿${verbo} el cobro N°${c.numero} por correo al cliente?`)) return
   enviandoId.value = c.id
   try {
     const { enviarCobro } = await import('./enviarCobro')
@@ -202,11 +207,11 @@ async function borrar(c: Cobro) {
             </TableCell>
             <TableCell class="whitespace-nowrap text-right">
               <Button
-                v-if="c.estado_pago === 'pendiente'"
+                v-if="c.estado_pago !== 'pagado'"
                 variant="ghost"
                 size="icon-sm"
-                title="Enviar cobro por correo"
-                aria-label="Enviar cobro por correo"
+                :title="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
+                :aria-label="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
                 :disabled="enviandoId === c.id"
                 @click="enviar(c)"
               >
