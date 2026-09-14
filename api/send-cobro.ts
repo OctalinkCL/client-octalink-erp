@@ -9,7 +9,8 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 interface SendCobroBody {
   to: string
   subject: string
-  message: string
+  text: string
+  html: string
   pdfBase64: string
   filename: string
 }
@@ -51,8 +52,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const { to, subject, message, pdfBase64, filename } = (req.body ?? {}) as Partial<SendCobroBody>
-  if (!to || !subject || !message || !pdfBase64 || !filename) {
+  const { to, subject, text, html, pdfBase64, filename } = (req.body ?? {}) as Partial<SendCobroBody>
+  if (!to || !subject || !text || !html || !pdfBase64 || !filename) {
     res.status(400).json({ error: 'Faltan datos del correo.' })
     return
   }
@@ -62,7 +63,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       from: process.env.RESEND_FROM!,
       to,
       subject,
-      text: message,
+      text,
+      html,
       attachments: [{ filename, content: pdfBase64 }],
     })
     if (error) {

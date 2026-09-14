@@ -70,6 +70,7 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
             ['Tipo de cuenta', b.tipo_cuenta],
             ['N° de cuenta', b.numero],
             ['Titular', b.titular],
+            ['RUT', b.rut],
             ['Email', b.email],
           ],
         },
