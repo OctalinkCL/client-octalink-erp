@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { FileTextIcon, PencilIcon, Trash2Icon } from '@lucide/vue'
+import { FileTextIcon, PencilIcon, SendIcon, Trash2Icon } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +41,7 @@ const {
   marcarPago,
   marcarBoleta,
   eliminar,
+  cargar,
 } = useCobranza()
 
 const CLASE_PAGO: Record<EstadoPago, string> = {
@@ -56,6 +57,8 @@ const CLASE_BOLETA: Record<EstadoBoleta, string> = {
 
 const editandoId = ref<string | null>(null)
 const enEdicion = (c: Cobro) => editandoId.value === c.id
+
+const enviandoId = ref<string | null>(null)
 
 function toggleEdicion(c: Cobro) {
   editandoId.value = enEdicion(c) ? null : c.id
@@ -82,6 +85,21 @@ async function onBoleta(c: Cobro, valor: unknown) {
 async function pdf(c: Cobro) {
   const { descargarOrdenDeCobro } = await import('./ordenDeCobroPdf')
   descargarOrdenDeCobro(c)
+}
+
+async function enviar(c: Cobro) {
+  if (!window.confirm(`¿Enviar el cobro N°${c.numero} por correo al cliente?`)) return
+  enviandoId.value = c.id
+  try {
+    const { enviarCobro } = await import('./enviarCobro')
+    await enviarCobro(c)
+    await cargar()
+  } catch (e) {
+    console.error(e)
+    window.alert(e instanceof Error ? e.message : 'No se pudo enviar el correo.')
+  } finally {
+    enviandoId.value = null
+  }
 }
 
 async function borrar(c: Cobro) {
@@ -183,6 +201,17 @@ async function borrar(c: Cobro) {
               </Badge>
             </TableCell>
             <TableCell class="whitespace-nowrap text-right">
+              <Button
+                v-if="c.estado_pago === 'pendiente'"
+                variant="ghost"
+                size="icon-sm"
+                title="Enviar cobro por correo"
+                aria-label="Enviar cobro por correo"
+                :disabled="enviandoId === c.id"
+                @click="enviar(c)"
+              >
+                <SendIcon />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
