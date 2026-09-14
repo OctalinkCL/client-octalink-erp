@@ -32,8 +32,16 @@ import {
 } from './types'
 
 const router = useRouter()
-const { cobrosFiltrados, loading, error, busqueda, marcarPago, marcarBoleta, eliminar } =
-  useCobranza()
+const {
+  cobrosFiltrados,
+  loading,
+  error,
+  busqueda,
+  filtroPago,
+  marcarPago,
+  marcarBoleta,
+  eliminar,
+} = useCobranza()
 
 const CLASE_PAGO: Record<EstadoPago, string> = {
   pendiente: 'bg-muted text-muted-foreground',
@@ -55,6 +63,10 @@ function toggleEdicion(c: Cobro) {
 
 function verDetalle(c: Cobro) {
   router.push({ name: 'cobro-editar', params: { id: c.id } })
+}
+
+function onFiltroPago(valor: unknown) {
+  filtroPago.value = String(valor) as EstadoPago | 'todos'
 }
 
 async function onPago(c: Cobro, valor: unknown) {
@@ -90,11 +102,22 @@ async function borrar(c: Cobro) {
       <Button @click="router.push({ name: 'cobro-nuevo' })">Cobro directo</Button>
     </div>
 
-    <Input
-      v-model="busqueda"
-      placeholder="Buscar por número, cliente, concepto o estado…"
-      class="max-w-sm"
-    />
+    <div class="flex flex-wrap items-center gap-3">
+      <Input
+        v-model="busqueda"
+        placeholder="Buscar por número, cliente, concepto o estado…"
+        class="max-w-sm"
+      />
+      <Select :model-value="filtroPago" @update:model-value="onFiltroPago">
+        <SelectTrigger class="w-40"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="todos">Todos</SelectItem>
+          <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e" class="capitalize">
+            {{ e }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 

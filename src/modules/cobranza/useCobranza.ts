@@ -20,6 +20,7 @@ const KEY = ['cobros'] as const
 export function useCobranza() {
   const qc = useQueryClient()
   const busqueda = ref('')
+  const filtroPago = ref<EstadoPago | 'todos'>('todos')
 
   // Un cambio en cobros afecta también ots (flag cobro_generado), el mapa de
   // cobros del mes de suscripciones, y el dashboard.
@@ -37,9 +38,13 @@ export function useCobranza() {
   const error = computed(() => (query.error.value ? 'No se pudieron cargar los cobros.' : ''))
 
   const cobrosFiltrados = computed(() => {
+    let lista = cobros.value
+    if (filtroPago.value !== 'todos') {
+      lista = lista.filter((c) => c.estado_pago === filtroPago.value)
+    }
     const q = busqueda.value.trim().toLowerCase()
-    if (!q) return cobros.value
-    return cobros.value.filter((c) =>
+    if (!q) return lista
+    return lista.filter((c) =>
       [String(c.numero), c.cliente_nombre, c.concepto, c.estado_pago, c.estado_boleta].some(
         (v) => v.toLowerCase().includes(q),
       ),
@@ -99,6 +104,7 @@ export function useCobranza() {
     loading,
     error,
     busqueda,
+    filtroPago,
     cargar: () => query.refetch(),
     obtener: (id: string) => obtenerCobro(id),
     crear: (input: CobroInput) => crearMut.mutateAsync(input),
