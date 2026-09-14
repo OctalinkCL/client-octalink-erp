@@ -35,7 +35,8 @@ Sabiendo en todo momento: si el cliente pagó o no, si se cobró o no, y si se e
 
 - `api/send-cobro.ts`: Vercel Function que verifica el ID token de Firebase Auth contra el UID owner (mismo de `firestore.rules`) y luego llama a Resend. Recibe `{ to, subject, message, pdfBase64, filename }` — **no conoce cobros ni Firestore**, es un enviador de correo + adjunto genérico a pesar del nombre del archivo.
 - Hoy solo se usa desde cobranza (`src/modules/cobranza/enviarCobro.ts`, adjunta la Orden de Cobro), pero cotizaciones u otros módulos pueden reusar el mismo endpoint sin tocar el backend: solo agregar un helper de frontend nuevo que arme su propio mensaje/PDF y llame a `/api/send-cobro`.
-- Requiere `RESEND_API_KEY`, `RESEND_FROM` y `FIREBASE_SERVICE_ACCOUNT` como env vars en Vercel (marcadas para Production **y** Preview/Development si se prueba con `vercel dev`) — no basta con tenerlas solo en `.env` local.
+- Requiere `RESEND_API_KEY` y `RESEND_FROM` como env vars en Vercel (marcadas para Production **y** Preview/Development si se prueba con `vercel dev`) — no basta con tenerlas solo en `.env` local.
+- **No usa `firebase-admin`**: esa dependencia arrastra `jwks-rsa` → `jose@6` (ESM-only) y rompe el bundle de Vercel con `ERR_REQUIRE_ESM`. La verificación del token se hace con un `fetch` directo al endpoint REST de Identity Platform (`accounts:lookup`) usando `VITE_FIREBASE_API_KEY` (no es secreto). No reintroducir `firebase-admin` en funciones de `/api` sin resolver antes ese conflicto de bundling.
 
 ## Diseño modular
 
