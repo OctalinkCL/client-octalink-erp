@@ -1,16 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { cert, getApps, initializeApp } from 'firebase-admin/app'
-import { getAuth } from 'firebase-admin/auth'
 import { Resend } from 'resend'
 
 // Mismo UID que `isOwner()` en firestore.rules — único usuario autorizado.
 const OWNER_UID = 'nFCr8TpWRyOVxzY3ikHOXcCoojV2'
-
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!)),
-  })
-}
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -20,6 +12,25 @@ interface SendCobroBody {
   message: string
   pdfBase64: string
   filename: string
+}
+
+// Verifica el ID token contra la API REST de Identity Platform (sin
+// firebase-admin: esa dependencia arrastra `jose@6`, que es ESM-only y
+// rompe el bundle de Vercel con ERR_REQUIRE_ESM). El API key de Firebase
+// no es secreto — es el mismo que usa el frontend.
+async function esOwner(idToken: string): Promise<boolean> {
+  const apiKey = process.env.VITE_FIREBASE_API_KEY
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    },
+  )
+  if (!res.ok) return false
+  const data = (await res.json()) as { users?: { localId: string }[] }
+  return data.users?.[0]?.localId === OWNER_UID
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -35,14 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  try {
-    const decoded = await getAuth().verifyIdToken(token)
-    if (decoded.uid !== OWNER_UID) {
-      res.status(403).json({ error: 'No autorizado.' })
-      return
-    }
-  } catch {
-    res.status(401).json({ error: 'Token inválido.' })
+  if (!(await esOwner(token))) {
+    res.status(401).json({ error: 'Token inválido o no autorizado.' })
     return
   }
 
