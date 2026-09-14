@@ -31,6 +31,12 @@ Sabiendo en todo momento: si el cliente pagó o no, si se cobró o no, y si se e
 - **Hosting:** Vercel
 - Se descarta Supabase por límite de proyectos gratuitos alcanzado.
 
+### Servicio de envío de correo (ya implementado, es genérico)
+
+- `api/send-cobro.ts`: Vercel Function que verifica el ID token de Firebase Auth contra el UID owner (mismo de `firestore.rules`) y luego llama a Resend. Recibe `{ to, subject, message, pdfBase64, filename }` — **no conoce cobros ni Firestore**, es un enviador de correo + adjunto genérico a pesar del nombre del archivo.
+- Hoy solo se usa desde cobranza (`src/modules/cobranza/enviarCobro.ts`, adjunta la Orden de Cobro), pero cotizaciones u otros módulos pueden reusar el mismo endpoint sin tocar el backend: solo agregar un helper de frontend nuevo que arme su propio mensaje/PDF y llame a `/api/send-cobro`.
+- Requiere `RESEND_API_KEY`, `RESEND_FROM` y `FIREBASE_SERVICE_ACCOUNT` como env vars en Vercel (marcadas para Production **y** Preview/Development si se prueba con `vercel dev`) — no basta con tenerlas solo en `.env` local.
+
 ## Diseño modular
 
 Módulos pensados para poder crecer agregando más adelante:
