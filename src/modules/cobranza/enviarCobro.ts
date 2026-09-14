@@ -5,17 +5,44 @@ import { cambiarEstadoPago } from './cobranza.service'
 import { base64OrdenDeCobro } from './ordenDeCobroPdf'
 import type { Cobro } from './types'
 
-function mensaje(cobro: Cobro, clienteNombre: string): string {
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+const FIRMA_TEXTO = [
+  'Saludos,',
+  'Equipo Octalink',
+  '',
+  'Enviado automáticamente desde octalink_erp. Si este correo llegó por error, contáctenos.',
+].join('\n')
+
+const FIRMA_HTML = `
+  <p>Saludos,<br>Equipo Octalink</p>
+  <p style="font-style: italic; color: #888; font-size: 12px;">
+    Enviado automáticamente desde octalink_erp. Si este correo llegó por error, contáctenos.
+  </p>
+`
+
+function textoPlano(cobro: Cobro, clienteNombre: string): string {
   return [
     `Hola ${clienteNombre},`,
     '',
     `Te compartimos la orden de cobro N°${cobro.numero} por ${formatoCLP(cobro.monto)}` +
       (cobro.concepto ? ` — ${cobro.concepto}.` : '.'),
     '',
-    'Adjuntamos el PDF con el detalle y los datos bancarios para la transferencia.',
+    'Adjuntamos el PDF con el detalle.',
     '',
-    'Saludos,',
-    'Octalink',
+    FIRMA_TEXTO,
+  ].join('\n')
+}
+
+function html(cobro: Cobro, clienteNombre: string): string {
+  const detalle = cobro.concepto ? ` — ${escapeHtml(cobro.concepto)}.` : '.'
+  return [
+    `<p>Hola ${escapeHtml(clienteNombre)},</p>`,
+    `<p>Te compartimos la orden de cobro N°${cobro.numero} por ${formatoCLP(cobro.monto)}${detalle}</p>`,
+    '<p>Adjuntamos el PDF con el detalle.</p>',
+    FIRMA_HTML,
   ].join('\n')
 }
 
@@ -39,7 +66,8 @@ export async function enviarCobro(cobro: Cobro): Promise<void> {
     body: JSON.stringify({
       to: cliente.email,
       subject: `Orden de cobro N°${cobro.numero} — Octalink`,
-      message: mensaje(cobro, cliente.nombre),
+      text: textoPlano(cobro, cliente.nombre),
+      html: html(cobro, cliente.nombre),
       pdfBase64,
       filename: `orden-de-cobro-${cobro.numero}.pdf`,
     }),
