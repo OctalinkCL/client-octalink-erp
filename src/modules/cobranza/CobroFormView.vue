@@ -40,6 +40,7 @@ const form = reactive<CobroInput>(cobroInputVacio())
 const fechaPago = ref('') // 'YYYY-MM-DD'
 const cargando = ref(false)
 const guardando = ref(false)
+const enviando = ref(false)
 const error = ref('')
 
 const dialogClienteAbierto = ref(false)
@@ -163,6 +164,23 @@ async function descargarPdf() {
   const { descargarOrdenDeCobro } = await import('./ordenDeCobroPdf')
   descargarOrdenDeCobro(c)
 }
+
+async function enviarCorreo() {
+  if (!window.confirm('¿Enviar este cobro por correo al cliente?')) return
+  enviando.value = true
+  try {
+    const c = await obtener(id.value)
+    if (!c) return
+    const { enviarCobro } = await import('./enviarCobro')
+    await enviarCobro(c)
+    form.estado_pago = 'enviado'
+  } catch (e) {
+    console.error(e)
+    window.alert(e instanceof Error ? e.message : 'No se pudo enviar el correo.')
+  } finally {
+    enviando.value = false
+  }
+}
 </script>
 
 <template>
@@ -268,6 +286,15 @@ async function descargarPdf() {
         </Button>
         <Button v-if="esEdicion" type="button" variant="outline" @click="descargarPdf">
           Descargar Orden de Cobro
+        </Button>
+        <Button
+          v-if="esEdicion && form.estado_pago === 'pendiente'"
+          type="button"
+          variant="outline"
+          :disabled="enviando"
+          @click="enviarCorreo"
+        >
+          {{ enviando ? 'Enviando…' : 'Enviar por correo' }}
         </Button>
       </div>
     </template>

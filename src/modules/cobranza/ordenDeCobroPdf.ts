@@ -95,3 +95,7 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
 export function descargarOrdenDeCobro(cobro: Cobro): void {
   pdfMake.createPdf(definicion(cobro)).download(`orden-de-cobro-${cobro.numero}.pdf`)
 }
+
+export function base64OrdenDeCobro(cobro: Cobro): Promise<string> {
+  return pdfMake.createPdf(definicion(cobro)).getBase64()
+}

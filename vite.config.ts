@@ -11,6 +11,14 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  // En dev, el frontend corre con `pnpm dev` (Vite normal) y las functions de
+  // /api se prueban aparte con `vercel dev` (puerto 3000 por defecto). Este
+  // proxy reenvía las llamadas a /api hacia ese servidor.
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
+  },
   // pdfmake carga por import() dinámico; pre-empaquetarlo evita el "Failed to
   // fetch dynamically imported module" cuando Vite reoptimiza en caliente.
   optimizeDeps: {
