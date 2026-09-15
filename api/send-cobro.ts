@@ -62,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error } = await resend.emails.send({
       from: process.env.RESEND_FROM!,
       to,
+      bcc: process.env.RESEND_FROM!,
       subject,
       text,
       html,
