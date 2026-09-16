@@ -23,7 +23,6 @@ import {
 import { formatoCLP } from '@/lib/formato'
 import { useCobranza } from './useCobranza'
 import {
-  ESTADOS_BOLETA,
   ESTADOS_PAGO,
   LABEL_ESTADO_BOLETA,
   type Cobro,
@@ -39,7 +38,6 @@ const {
   busqueda,
   filtroPago,
   marcarPago,
-  marcarBoleta,
   eliminar,
   cargar,
 } = useCobranza()
@@ -75,11 +73,6 @@ function onFiltroPago(valor: unknown) {
 async function onPago(c: Cobro, valor: unknown) {
   const estado = String(valor) as EstadoPago
   if (estado && estado !== c.estado_pago) await marcarPago(c.id, estado, null)
-}
-
-async function onBoleta(c: Cobro, valor: unknown) {
-  const estado = String(valor) as EstadoBoleta
-  if (estado && estado !== c.estado_boleta) await marcarBoleta(c.id, estado)
 }
 
 async function pdf(c: Cobro) {
@@ -142,87 +135,73 @@ async function borrar(c: Cobro) {
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
-    <div class="overflow-x-auto rounded-lg border">
-      <Table variant="border">
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-4">#</TableHead>
-            <TableHead>N° Orden / Cliente</TableHead>
-            <TableHead>Concepto</TableHead>
-            <TableHead class="text-right">Monto</TableHead>
-            <TableHead class="w-36">Pago</TableHead>
-            <TableHead class="w-40">Boleta</TableHead>
-            <TableHead class="w-0"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-if="loading">
-            <TableCell colspan="7" class="text-center text-muted-foreground">Cargando…</TableCell>
-          </TableRow>
-          <TableRow v-else-if="!cobrosFiltrados.length">
-            <TableCell colspan="7" class="text-center text-muted-foreground">Sin cobros.</TableCell>
-          </TableRow>
-          <TableRow v-for="c, i in cobrosFiltrados" v-else :key="c.id">
-            <TableCell class="text-neutral-500 ">{{ i + 1 }}</TableCell>
-            <TableCell @click="verDetalle(c)" class="group cursor-pointer">
-              <span
-                class="inline-flex text-center size-5 bg-gray-100 text-zinc-500 rounded text-xs items-center justify-center mr-2">
-                {{ c.numero }}
-              </span>
-              <span class="group-hover:underline">{{ c.cliente_nombre }}</span>
-            </TableCell>
-            <TableCell class="max-w-[24ch] truncate">{{ c.concepto }}</TableCell>
-            <TableCell class="text-right">{{ formatoCLP(c.monto) }}</TableCell>
-            <TableCell>
-              <Select v-if="enEdicion(c)" :model-value="c.estado_pago" @update:model-value="(v) => onPago(c, v)">
-                <SelectTrigger class="h-7 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Badge v-else class="capitalize" :class="CLASE_PAGO[c.estado_pago]">
-                {{ c.estado_pago }}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <Select v-if="enEdicion(c)" :model-value="c.estado_boleta" @update:model-value="(v) => onBoleta(c, v)">
-                <SelectTrigger class="h-7 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="e in ESTADOS_BOLETA" :key="e" :value="e">
-                    {{ LABEL_ESTADO_BOLETA[e] }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Badge v-else :class="CLASE_BOLETA[c.estado_boleta]">
-                {{ LABEL_ESTADO_BOLETA[c.estado_boleta] }}
-              </Badge>
-            </TableCell>
-            <TableCell class="whitespace-nowrap text-right">
-              <Button v-if="c.estado_pago !== 'pagado'" variant="ghost" size="icon-sm"
-                :title="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
-                :aria-label="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
-                :disabled="enviandoId === c.id" @click="enviar(c)">
-                <SendIcon />
-              </Button>
-              <Button variant="ghost" size="icon-sm" title="Descargar PDF" aria-label="Descargar PDF" @click="pdf(c)">
-                <FileTextIcon />
-              </Button>
-              <Button :variant="enEdicion(c) ? 'secondary' : 'ghost'" size="icon-sm" title="Editar estado"
-                aria-label="Editar estado" @click="toggleEdicion(c)">
-                <PencilIcon />
-              </Button>
-              <Button variant="ghost" size="icon-sm" class="text-destructive" title="Eliminar" aria-label="Eliminar"
-                @click="borrar(c)">
-                <Trash2Icon />
-              </Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
+    <Table variant="border">
+      <TableHeader>
+        <TableRow>
+          <TableHead>N° Orden / Cliente</TableHead>
+          <TableHead>Concepto</TableHead>
+          <TableHead class="text-right">Monto</TableHead>
+          <TableHead class="w-36">Estado</TableHead>
+          <TableHead class="w-40">Boleta</TableHead>
+          <TableHead class="w-0"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow v-if="loading">
+          <TableCell colspan="7" class="text-center text-muted-foreground">Cargando…</TableCell>
+        </TableRow>
+        <TableRow v-else-if="!cobrosFiltrados.length">
+          <TableCell colspan="7" class="text-center text-muted-foreground">Sin cobros.</TableCell>
+        </TableRow>
+        <TableRow v-for="c in cobrosFiltrados" v-else :key="c.id">
+          <TableCell @click="verDetalle(c)" class="group cursor-pointer">
+            <span
+              class="inline-flex text-center size-5 bg-gray-100 text-zinc-500 rounded text-xs items-center justify-center mr-2">
+              {{ c.numero }}
+            </span>
+            <span class="group-hover:underline">{{ c.cliente_nombre }}</span>
+          </TableCell>
+          <TableCell class="max-w-[24ch] truncate">{{ c.concepto }}</TableCell>
+          <TableCell class="text-right font-mono font-normal text-xs">{{ formatoCLP(c.monto) }}</TableCell>
+          <TableCell>
+            <Select v-if="enEdicion(c)" :model-value="c.estado_pago" @update:model-value="(v) => onPago(c, v)">
+              <SelectTrigger class="h-7 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Badge v-else class="capitalize" :class="CLASE_PAGO[c.estado_pago]">
+              {{ c.estado_pago }}
+            </Badge>
+          </TableCell>
+          <TableCell>
+            <Badge :class="CLASE_BOLETA[c.estado_boleta]">
+              {{ LABEL_ESTADO_BOLETA[c.estado_boleta] }}
+            </Badge>
+          </TableCell>
+          <TableCell class="whitespace-nowrap text-right">
+            <Button v-if="c.estado_pago !== 'pagado'" variant="ghost" size="icon-sm"
+              :title="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
+              :aria-label="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
+              :disabled="enviandoId === c.id" @click="enviar(c)">
+              <SendIcon />
+            </Button>
+            <Button variant="ghost" size="icon-sm" title="Descargar PDF" aria-label="Descargar PDF" @click="pdf(c)">
+              <FileTextIcon />
+            </Button>
+            <Button :variant="enEdicion(c) ? 'secondary' : 'ghost'" size="icon-sm" title="Editar estado"
+              aria-label="Editar estado" @click="toggleEdicion(c)">
+              <PencilIcon />
+            </Button>
+            <Button variant="ghost" size="icon-sm" class="text-destructive" title="Eliminar" aria-label="Eliminar"
+              @click="borrar(c)">
+              <Trash2Icon />
+            </Button>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>
