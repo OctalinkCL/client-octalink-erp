@@ -6,9 +6,9 @@ import AppSidebar from '@/components/AppSidebar.vue'
 
 <template>
   <SidebarProvider>
-    <AppSidebar />
+    <AppSidebar variant="inset" />
     <SidebarInset>
-      <header class="flex h-14 items-center gap-2 border-b px-4">
+      <header class="flex h-14 items-center gap-2 border-b px-4 sticky top-0">
         <SidebarTrigger />
       </header>
       <main class="flex-1 p-6">
