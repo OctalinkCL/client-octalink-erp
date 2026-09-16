@@ -7,11 +7,12 @@ import AppSidebar from '@/components/AppSidebar.vue'
 <template>
   <SidebarProvider>
     <AppSidebar variant="inset" />
-    <SidebarInset>
-      <header class="flex h-14 items-center gap-2 border-b px-4 sticky top-0">
+    <SidebarInset
+      class="bg-transparent  md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none md:peer-data-[variant=inset]:mt-0">
+      <header class=" flex h-14 items-center gap-2 px-4 sticky top-0">
         <SidebarTrigger />
       </header>
-      <main class="flex-1 p-6">
+      <main class="bg-background rounded-xl p-4 flex-1">
         <RouterView />
       </main>
     </SidebarInset>
