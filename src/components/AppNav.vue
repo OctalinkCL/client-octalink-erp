@@ -33,12 +33,10 @@ const items = [
 <template>
   <SidebarGroup>
     <SidebarGroupContent>
-      <SidebarMenu>
+      <SidebarMenu class="gap-1">
         <SidebarMenuItem v-for="item in items" :key="item.to">
-          <SidebarMenuButton
-            as-child
-            :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)"
-          >
+          <SidebarMenuButton as-child
+            :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
             <RouterLink :to="item.to">
               <component :is="item.icon" />
               <span>{{ item.label }}</span>

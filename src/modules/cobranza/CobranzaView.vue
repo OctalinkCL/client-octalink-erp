@@ -126,13 +126,11 @@ async function borrar(c: Cobro) {
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
-      <Input
-        v-model="busqueda"
-        placeholder="Buscar por número, cliente, concepto o estado…"
-        class="max-w-sm"
-      />
+      <Input v-model="busqueda" placeholder="Buscar por número, cliente, concepto o estado…" class="max-w-sm" />
       <Select :model-value="filtroPago" @update:model-value="onFiltroPago">
-        <SelectTrigger class="w-40"><SelectValue /></SelectTrigger>
+        <SelectTrigger class="w-40">
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value="todos">Todos</SelectItem>
           <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e" class="capitalize">
@@ -145,11 +143,11 @@ async function borrar(c: Cobro) {
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
     <div class="overflow-x-auto rounded-lg border">
-      <Table>
+      <Table variant="border">
         <TableHeader>
           <TableRow>
-            <TableHead class="w-14">N°</TableHead>
-            <TableHead>Cliente</TableHead>
+            <TableHead class="w-4">#</TableHead>
+            <TableHead>N° Orden / Cliente</TableHead>
             <TableHead>Concepto</TableHead>
             <TableHead class="text-right">Monto</TableHead>
             <TableHead class="w-36">Pago</TableHead>
@@ -164,22 +162,22 @@ async function borrar(c: Cobro) {
           <TableRow v-else-if="!cobrosFiltrados.length">
             <TableCell colspan="7" class="text-center text-muted-foreground">Sin cobros.</TableCell>
           </TableRow>
-          <TableRow v-for="c in cobrosFiltrados" v-else :key="c.id">
-            <TableCell class="font-medium">
-              <button type="button" class="hover:underline" @click="verDetalle(c)">
+          <TableRow v-for="c, i in cobrosFiltrados" v-else :key="c.id">
+            <TableCell class="text-neutral-500 ">{{ i + 1 }}</TableCell>
+            <TableCell @click="verDetalle(c)" class="group cursor-pointer">
+              <span
+                class="inline-flex text-center size-5 bg-gray-100 text-zinc-500 rounded text-xs items-center justify-center mr-2">
                 {{ c.numero }}
-              </button>
+              </span>
+              <span class="group-hover:underline">{{ c.cliente_nombre }}</span>
             </TableCell>
-            <TableCell>{{ c.cliente_nombre }}</TableCell>
             <TableCell class="max-w-[24ch] truncate">{{ c.concepto }}</TableCell>
             <TableCell class="text-right">{{ formatoCLP(c.monto) }}</TableCell>
             <TableCell>
-              <Select
-                v-if="enEdicion(c)"
-                :model-value="c.estado_pago"
-                @update:model-value="(v) => onPago(c, v)"
-              >
-                <SelectTrigger class="h-7 w-full"><SelectValue /></SelectTrigger>
+              <Select v-if="enEdicion(c)" :model-value="c.estado_pago" @update:model-value="(v) => onPago(c, v)">
+                <SelectTrigger class="h-7 w-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
                 </SelectContent>
@@ -189,12 +187,10 @@ async function borrar(c: Cobro) {
               </Badge>
             </TableCell>
             <TableCell>
-              <Select
-                v-if="enEdicion(c)"
-                :model-value="c.estado_boleta"
-                @update:model-value="(v) => onBoleta(c, v)"
-              >
-                <SelectTrigger class="h-7 w-full"><SelectValue /></SelectTrigger>
+              <Select v-if="enEdicion(c)" :model-value="c.estado_boleta" @update:model-value="(v) => onBoleta(c, v)">
+                <SelectTrigger class="h-7 w-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="e in ESTADOS_BOLETA" :key="e" :value="e">
                     {{ LABEL_ESTADO_BOLETA[e] }}
@@ -206,43 +202,21 @@ async function borrar(c: Cobro) {
               </Badge>
             </TableCell>
             <TableCell class="whitespace-nowrap text-right">
-              <Button
-                v-if="c.estado_pago !== 'pagado'"
-                variant="ghost"
-                size="icon-sm"
+              <Button v-if="c.estado_pago !== 'pagado'" variant="ghost" size="icon-sm"
                 :title="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
                 :aria-label="yaEnviado(c) ? 'Reenviar cobro por correo' : 'Enviar cobro por correo'"
-                :disabled="enviandoId === c.id"
-                @click="enviar(c)"
-              >
+                :disabled="enviandoId === c.id" @click="enviar(c)">
                 <SendIcon />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                title="Descargar PDF"
-                aria-label="Descargar PDF"
-                @click="pdf(c)"
-              >
+              <Button variant="ghost" size="icon-sm" title="Descargar PDF" aria-label="Descargar PDF" @click="pdf(c)">
                 <FileTextIcon />
               </Button>
-              <Button
-                :variant="enEdicion(c) ? 'secondary' : 'ghost'"
-                size="icon-sm"
-                title="Editar estado"
-                aria-label="Editar estado"
-                @click="toggleEdicion(c)"
-              >
+              <Button :variant="enEdicion(c) ? 'secondary' : 'ghost'" size="icon-sm" title="Editar estado"
+                aria-label="Editar estado" @click="toggleEdicion(c)">
                 <PencilIcon />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                class="text-destructive"
-                title="Eliminar"
-                aria-label="Eliminar"
-                @click="borrar(c)"
-              >
+              <Button variant="ghost" size="icon-sm" class="text-destructive" title="Eliminar" aria-label="Eliminar"
+                @click="borrar(c)">
                 <Trash2Icon />
               </Button>
             </TableCell>
