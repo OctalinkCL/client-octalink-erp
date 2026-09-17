@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { type Cliente, type ClienteInput, clienteInputVacio } from './types'
 
+import ButtonAction from '@/components/ButtonAction.vue'
+
 const props = defineProps<{
   open: boolean
   cliente: Cliente | null
@@ -34,14 +36,14 @@ watch(
     if (!abierto) return
     const base = props.cliente
       ? {
-          nombre: props.cliente.nombre,
-          rut: props.cliente.rut,
-          email: props.cliente.email,
-          telefono: props.cliente.telefono,
-          direccion: props.cliente.direccion,
-          contacto: props.cliente.contacto,
-          notas: props.cliente.notas,
-        }
+        nombre: props.cliente.nombre,
+        rut: props.cliente.rut,
+        email: props.cliente.email,
+        telefono: props.cliente.telefono,
+        direccion: props.cliente.direccion,
+        contacto: props.cliente.contacto,
+        notas: props.cliente.notas,
+      }
       : clienteInputVacio()
     Object.assign(form, base)
   },
@@ -101,9 +103,9 @@ function submit() {
           <Button type="button" variant="outline" :disabled="saving" @click="emit('update:open', false)">
             Cancelar
           </Button>
-          <Button type="submit" :disabled="saving">
-            {{ saving ? 'Guardando…' : 'Guardar' }}
-          </Button>
+          <ButtonAction :status="saving ? 'loading' : 'idle'" @click="submit">
+            Guardar
+          </ButtonAction>
         </DialogFooter>
       </form>
     </DialogContent>

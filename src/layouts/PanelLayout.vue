@@ -9,7 +9,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
     <AppSidebar variant="inset" />
     <SidebarInset
       class="bg-transparent  md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none md:peer-data-[variant=inset]:mt-0">
-      <header class=" flex h-14 items-center gap-2 px-4 sticky top-0">
+      <header class=" flex h-14 items-center gap-2 px-4 sticky top-0 border-b md:border-0">
         <SidebarTrigger />
       </header>
       <main class="bg-background rounded-xl p-4 flex-1">
