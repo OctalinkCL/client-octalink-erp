@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@foleyjs/vue": "^2.9.0",
     "@lucide/vue": "^1.43.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/vue-query": "^5.102.8",

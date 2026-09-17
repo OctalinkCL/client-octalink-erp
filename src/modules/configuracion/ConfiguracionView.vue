@@ -4,6 +4,7 @@ import { MonitorIcon, MoonIcon, SunIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import SoundToggle from '@/components/SoundToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import { obtenerSiguienteNumero, guardarSiguienteNumero } from './configuracion.service'
 
@@ -57,6 +58,11 @@ onMounted(cargar)
 <template>
   <div class="flex max-w-md flex-col gap-5">
     <h1 class="text-2xl font-semibold">Configuración</h1>
+
+    <div class="grid gap-1.5">
+      <Label>Sonido</Label>
+      <SoundToggle />
+    </div>
 
     <div class="grid gap-1.5">
       <Label>Tema</Label>

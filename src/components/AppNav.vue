@@ -44,7 +44,7 @@ const items = [
         <SidebarMenuItem v-for="item in items" :key="item.to">
           <SidebarMenuButton as-child
             :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
-            <RouterLink :to="item.to" @click="handleNavigate">
+            <RouterLink :to="item.to" v-foley="'tick'" @click="handleNavigate">
               <component :is="item.icon" />
               <span>{{ item.label }}</span>
             </RouterLink>
