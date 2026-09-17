@@ -15,9 +15,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 
 const route = useRoute()
+const { isMobile, setOpenMobile } = useSidebar()
+
+function handleNavigate() {
+  if (isMobile.value)
+    setOpenMobile(false)
+}
 
 const items = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboardIcon },
@@ -37,7 +44,7 @@ const items = [
         <SidebarMenuItem v-for="item in items" :key="item.to">
           <SidebarMenuButton as-child
             :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
-            <RouterLink :to="item.to">
+            <RouterLink :to="item.to" v-foley="'tick'" @click="handleNavigate">
               <component :is="item.icon" />
               <span>{{ item.label }}</span>
             </RouterLink>

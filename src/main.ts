@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import { FoleyPlugin } from '@foleyjs/vue'
 import './style.css'
 import App from './App.vue'
 import router from './router'
@@ -18,6 +19,7 @@ const queryClient = new QueryClient({
 
 createApp(App)
   .use(createPinia())
+  .use(FoleyPlugin, { theme: 'default', volume: 0.6 })
   .use(VueQueryPlugin, { queryClient })
   .use(router)
   .mount('#app')

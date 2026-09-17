@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@foleyjs/vue':
+        specifier: ^2.9.0
+        version: 2.9.0(@foleyjs/core@2.9.0)(vue@3.5.42(typescript@6.0.3))
       '@lucide/vue':
         specifier: ^1.43.0
         version: 1.43.0(vue@3.5.42(typescript@6.0.3))
@@ -695,6 +698,15 @@ packages:
 
   '@floating-ui/vue@1.1.11':
     resolution: {integrity: sha512-HzHKCNVxnGS35r9fCHBc3+uCnjw9IWIlCPL683cGgM9Kgj2BiAl8x1mS7vtvP6F9S/e/q4O6MApwSHj8hNLGfw==}
+
+  '@foleyjs/core@2.9.0':
+    resolution: {integrity: sha512-mL15Y3KDQiU7BUcvVpojBkpgJgsanCQjyH7Rv9CDdVIDhNS1jAXdInX+jjW2983q1jRvkmCcv/s5Qn5k9gViSg==}
+
+  '@foleyjs/vue@2.9.0':
+    resolution: {integrity: sha512-I0+q9GUFV2IcYfjtGz0gqo+aksQCMyKE289Erk6ND6egUQ7u1/9RXgLc9Kkr0+uu+yngM6GOySKH0dhtu0JsZA==}
+    peerDependencies:
+      '@foleyjs/core': ^2.9.0
+      vue: '>=3'
 
   '@grpc/grpc-js@1.9.16':
     resolution: {integrity: sha512-wE4Ut/olIzfKqp631XrG+wbF0v1vWFN4YL9FyXC2LJiG33DsV7PLzURjrCvY/6je2ntdRkeLpPDluzSRGaVltQ==}
@@ -4072,6 +4084,13 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@foleyjs/core@2.9.0': {}
+
+  '@foleyjs/vue@2.9.0(@foleyjs/core@2.9.0)(vue@3.5.42(typescript@6.0.3))':
+    dependencies:
+      '@foleyjs/core': 2.9.0
+      vue: 3.5.42(typescript@6.0.3)
 
   '@grpc/grpc-js@1.9.16':
     dependencies:
