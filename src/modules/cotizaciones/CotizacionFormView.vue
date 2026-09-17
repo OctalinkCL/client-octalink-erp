@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Loading from '@/components/Loading.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -151,7 +152,7 @@ async function guardar() {
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
-    <div v-if="cargando" class="text-sm text-muted-foreground">Cargando…</div>
+    <Loading v-if="cargando" label="Cargando cotización" />
 
     <template v-else>
       <!-- Cliente -->

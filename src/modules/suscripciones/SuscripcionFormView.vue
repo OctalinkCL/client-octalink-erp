@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Loading from '@/components/Loading.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -142,7 +143,7 @@ async function guardar() {
     </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
-    <div v-if="cargando" class="text-sm text-muted-foreground">Cargando…</div>
+    <Loading v-if="cargando" label="Cargando suscripción" />
 
     <template v-else>
       <p
