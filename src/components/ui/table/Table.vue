@@ -16,7 +16,7 @@ provide(TABLE_VARIANT_KEY, computed(() => props.variant))
 
 <template>
   <div data-slot="table-container"
-    :class="cn('relative w-full overflow-x-auto', props.variant === 'border' && 'rounded-lg border')">
+    :class="cn('relative w-full overflow-x-auto', props.variant === 'border' && 'rounded border')">
     <table data-slot="table" :class="cn('w-full caption-bottom text-sm md:text-[12.5px]', props.class)">
       <slot />
     </table>
