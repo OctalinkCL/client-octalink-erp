@@ -89,77 +89,65 @@ async function borrar(s: Suscripcion) {
       <Button @click="router.push({ name: 'suscripcion-nueva' })">Nueva suscripción</Button>
     </div>
 
-    <Input
-      v-model="busqueda"
-      placeholder="Buscar por cliente, descripción o estado…"
-      class="max-w-sm"
-    />
+    <Input v-model="busqueda" placeholder="Buscar por cliente, descripción o estado…" class="max-w-sm" />
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
-    <div class="overflow-x-auto rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Descripción</TableHead>
-            <TableHead class="text-right">Monto / mes</TableHead>
-            <TableHead class="w-16 text-center">Día</TableHead>
-            <TableHead class="w-32">Estado</TableHead>
-            <TableHead class="w-52">Cobro de {{ mesCicloLegible(mesActual) }}</TableHead>
-            <TableHead class="w-0"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-if="loading">
-            <TableCell colspan="7" class="text-center text-muted-foreground">Cargando…</TableCell>
-          </TableRow>
-          <TableRow v-else-if="!suscripcionesFiltradas.length">
-            <TableCell colspan="7" class="text-center text-muted-foreground">
-              Sin suscripciones.
-            </TableCell>
-          </TableRow>
-          <TableRow v-for="s in suscripcionesFiltradas" v-else :key="s.id">
-            <TableCell class="font-medium">{{ s.cliente_nombre }}</TableCell>
-            <TableCell class="max-w-[24ch] truncate">{{ s.descripcion }}</TableCell>
-            <TableCell class="text-right">{{ formatoCLP(s.monto) }}</TableCell>
-            <TableCell class="text-center">{{ s.dia_cobro }}</TableCell>
-            <TableCell>
-              <Select :model-value="s.estado" @update:model-value="(v) => onEstado(s, v)">
-                <SelectTrigger class="h-7 w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="e in ESTADOS_SUSCRIPCION" :key="e" :value="e">{{ e }}</SelectItem>
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <span v-if="s.estado !== 'activa'" class="text-sm text-muted-foreground">—</span>
-              <RouterLink
-                v-else-if="cobroDelMes(s.id)"
-                :to="{ name: 'cobro-editar', params: { id: cobroDelMes(s.id)!.id } }"
-                class="text-sm text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-500"
-              >
-                ✓ Cobro N°{{ cobroDelMes(s.id)!.numero }}
-              </RouterLink>
-              <Button
-                v-else
-                variant="outline"
-                size="sm"
-                :disabled="generandoCobro === s.id"
-                @click="generarCobroMes(s)"
-              >
-                {{ generandoCobro === s.id ? 'Generando…' : 'Generar cobro' }}
-              </Button>
-            </TableCell>
-            <TableCell class="whitespace-nowrap text-right">
-              <Button variant="ghost" size="sm" @click="editar(s)">Editar</Button>
-              <Button variant="ghost" size="sm" class="text-destructive" @click="borrar(s)">
-                Eliminar
-              </Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
+    <Table variant="border">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Cliente</TableHead>
+          <TableHead>Descripción</TableHead>
+          <TableHead class="text-right">Monto / mes</TableHead>
+          <TableHead class="w-16 text-center">Día</TableHead>
+          <TableHead class="w-32">Estado</TableHead>
+          <TableHead class="w-52">Cobro de {{ mesCicloLegible(mesActual) }}</TableHead>
+          <TableHead class="w-0"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow v-if="loading">
+          <TableCell colspan="7" class="text-center text-muted-foreground">Cargando…</TableCell>
+        </TableRow>
+        <TableRow v-else-if="!suscripcionesFiltradas.length">
+          <TableCell colspan="7" class="text-center text-muted-foreground">
+            Sin suscripciones.
+          </TableCell>
+        </TableRow>
+        <TableRow v-for="s in suscripcionesFiltradas" v-else :key="s.id">
+          <TableCell class="font-medium">{{ s.cliente_nombre }}</TableCell>
+          <TableCell class="max-w-[24ch] truncate">{{ s.descripcion }}</TableCell>
+          <TableCell class="text-right font-mono">{{ formatoCLP(s.monto) }}</TableCell>
+          <TableCell class="text-center font-mono">{{ s.dia_cobro }}</TableCell>
+          <TableCell>
+            <Select :model-value="s.estado" @update:model-value="(v) => onEstado(s, v)">
+              <SelectTrigger class="h-7 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="e in ESTADOS_SUSCRIPCION" :key="e" :value="e">{{ e }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </TableCell>
+          <TableCell>
+            <span v-if="s.estado !== 'activa'" class="text-sm text-muted-foreground">—</span>
+            <RouterLink v-else-if="cobroDelMes(s.id)"
+              :to="{ name: 'cobro-editar', params: { id: cobroDelMes(s.id)!.id } }"
+              class="text-sm text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-500">
+              ✓ Cobro N°{{ cobroDelMes(s.id)!.numero }}
+            </RouterLink>
+            <Button v-else variant="outline" size="sm" :disabled="generandoCobro === s.id" @click="generarCobroMes(s)">
+              {{ generandoCobro === s.id ? 'Generando…' : 'Generar cobro' }}
+            </Button>
+          </TableCell>
+          <TableCell class="whitespace-nowrap text-right">
+            <Button variant="ghost" size="sm" @click="editar(s)">Editar</Button>
+            <Button variant="ghost" size="sm" class="text-destructive" @click="borrar(s)">
+              Eliminar
+            </Button>
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   </div>
 </template>

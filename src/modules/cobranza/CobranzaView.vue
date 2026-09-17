@@ -156,7 +156,7 @@ async function borrar(c: Cobro) {
         <TableRow v-for="c in cobrosFiltrados" v-else :key="c.id">
           <TableCell @click="verDetalle(c)" class="group cursor-pointer">
             <span
-              class="inline-flex text-center size-5 bg-gray-100 text-zinc-500 rounded text-xs items-center justify-center mr-2">
+              class="inline-flex text-center size-5 bg-gray-100 text-zinc-600 rounded text-xs items-center justify-center mr-2">
               {{ c.numero }}
             </span>
             <span class="group-hover:underline">{{ c.cliente_nombre }}</span>
