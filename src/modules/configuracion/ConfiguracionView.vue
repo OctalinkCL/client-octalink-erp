@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { MonitorIcon, MoonIcon, SunIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTheme } from '@/composables/useTheme'
 import { obtenerSiguienteNumero, guardarSiguienteNumero } from './configuracion.service'
+
+const { theme } = useTheme()
+
+const opcionesTema = [
+  { value: 'auto', label: 'Sistema', icon: MonitorIcon },
+  { value: 'light', label: 'Claro', icon: SunIcon },
+  { value: 'dark', label: 'Oscuro', icon: MoonIcon },
+] as const
 
 const numeros = reactive({ cotizaciones: 1, ots: 1, cobros: 1 })
 const cargando = ref(false)
@@ -47,6 +57,22 @@ onMounted(cargar)
 <template>
   <div class="flex max-w-md flex-col gap-5">
     <h1 class="text-2xl font-semibold">Configuración</h1>
+
+    <div class="grid gap-1.5">
+      <Label>Tema</Label>
+      <div class="flex gap-2">
+        <Button
+          v-for="opcion in opcionesTema"
+          :key="opcion.value"
+          type="button"
+          :variant="theme === opcion.value ? 'default' : 'outline'"
+          @click="theme = opcion.value"
+        >
+          <component :is="opcion.icon" />
+          {{ opcion.label }}
+        </Button>
+      </div>
+    </div>
 
     <div class="grid gap-1.5">
       <Label for="num-cot">Próximo número de cotización</Label>

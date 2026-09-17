@@ -200,7 +200,7 @@ async function enviarCorreo() {
 </script>
 
 <template>
-  <div class="flex max-w-2xl flex-col gap-5">
+  <div class="flex max-w-4xl flex-col gap-5">
     <div class="flex items-center gap-3">
       <Button variant="outline" size="sm" @click="router.push({ name: 'cobranza' })">← Volver</Button>
       <h1 class="text-2xl font-semibold">{{ esEdicion ? 'Editar cobro' : 'Cobro directo' }}</h1>
@@ -215,104 +215,110 @@ async function enviarCorreo() {
           (cotización N°{{ form.cotizacion_numero }})</template>.
       </p>
 
-      <div class="grid gap-1.5">
-        <Label>Cliente</Label>
-        <div class="flex gap-2">
-          <Select :model-value="form.cliente_id" @update:model-value="(v) => seleccionarCliente(String(v))">
-            <SelectTrigger class="w-full">
-              <SelectValue placeholder="Selecciona un cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="c in clientes" :key="c.id" :value="c.id">{{ c.nombre }}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="button" variant="outline" @click="dialogClienteAbierto = true">
-            ＋ Nuevo
-          </Button>
+      <div class="grid gap-6 md:grid-cols-2 md:gap-10">
+        <div class="flex flex-col gap-5" :class="{ 'md:col-span-2': !(esEdicion && historial.length) }">
+          <div class="grid gap-1.5">
+            <Label>Cliente</Label>
+            <div class="flex gap-2">
+              <Select :model-value="form.cliente_id" @update:model-value="(v) => seleccionarCliente(String(v))">
+                <SelectTrigger class="w-full">
+                  <SelectValue placeholder="Selecciona un cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="c in clientes" :key="c.id" :value="c.id">{{ c.nombre }}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" @click="dialogClienteAbierto = true">
+                ＋ Nuevo
+              </Button>
+            </div>
+          </div>
+
+          <div class="grid gap-1.5">
+            <Label for="concepto">Concepto</Label>
+            <Textarea id="concepto" v-model="form.concepto" placeholder="Qué se está cobrando" />
+          </div>
+
+          <div class="grid max-w-xs gap-1.5">
+            <Label for="monto">Monto (CLP)</Label>
+            <Input id="monto" v-model.number="form.monto" type="number" min="0" step="1" />
+            <span class="text-sm text-muted-foreground">{{ formatoCLP(form.monto) }}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-1.5">
+              <Label>Estado de pago</Label>
+              <Select :model-value="form.estado_pago"
+                @update:model-value="(v) => (form.estado_pago = String(v) as EstadoPago)">
+                <SelectTrigger class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div v-if="form.estado_pago === 'pagado'" class="grid gap-1.5">
+              <Label for="fpago">Fecha de pago</Label>
+              <Input id="fpago" v-model="fechaPago" type="date" />
+            </div>
+          </div>
+
+          <div class="grid gap-1.5">
+            <Label>Estado de boleta</Label>
+            <Select :model-value="form.estado_boleta"
+              @update:model-value="(v) => (form.estado_boleta = String(v) as EstadoBoleta)">
+              <SelectTrigger class="max-w-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="e in ESTADOS_BOLETA" :key="e" :value="e">
+                  {{ LABEL_ESTADO_BOLETA[e] }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div v-if="form.estado_boleta !== 'no_aplica'" class="grid gap-1.5">
+            <Label for="urlb">URL de la boleta (PDF)</Label>
+            <Input id="urlb" v-model="form.url_boleta" placeholder="https://…" />
+            <span class="text-sm text-muted-foreground">
+              Por ahora pega el link (Drive u otro). La subida directa se agrega después.
+            </span>
+          </div>
+
+          <div class="grid gap-1.5">
+            <Label for="notas">Notas</Label>
+            <Textarea id="notas" v-model="form.notas" />
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <Button :disabled="guardando" @click="guardar">
+              {{ guardando ? 'Guardando…' : 'Guardar' }}
+            </Button>
+            <Button variant="outline" :disabled="guardando" @click="router.push({ name: 'cobranza' })">
+              Cancelar
+            </Button>
+            <Button v-if="esEdicion" type="button" variant="outline" @click="descargarPdf">
+              Descargar Orden de Cobro
+            </Button>
+            <Button v-if="esEdicion && form.estado_pago !== 'pagado'" type="button" variant="outline"
+              :disabled="enviando" @click="enviarCorreo">
+              {{ enviando ? 'Enviando…' : yaEnviado ? 'Reenviar por correo' : 'Enviar por correo' }}
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div class="grid gap-1.5">
-        <Label for="concepto">Concepto</Label>
-        <Textarea id="concepto" v-model="form.concepto" placeholder="Qué se está cobrando" />
-      </div>
-
-      <div class="grid max-w-xs gap-1.5">
-        <Label for="monto">Monto (CLP)</Label>
-        <Input id="monto" v-model.number="form.monto" type="number" min="0" step="1" />
-        <span class="text-sm text-muted-foreground">{{ formatoCLP(form.monto) }}</span>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="grid gap-1.5">
-          <Label>Estado de pago</Label>
-          <Select :model-value="form.estado_pago"
-            @update:model-value="(v) => (form.estado_pago = String(v) as EstadoPago)">
-            <SelectTrigger class="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
-            </SelectContent>
-          </Select>
+        <div v-if="esEdicion && historial.length" class="flex flex-col gap-1.5">
+          <Label>Historial</Label>
+          <ol class="ml-1 flex flex-col gap-5 border-l border-border py-1 pl-4">
+            <li v-for="(h, i) in historial" :key="i" class="relative">
+              <span class="absolute top-1 -left-5.25 size-2 rounded-full bg-primary" />
+              <p class="text-sm font-medium">{{ LABEL_EVENTO_COBRO[h.tipo] }}</p>
+              <p class="text-xs text-muted-foreground">{{ formatoFecha.format(h.fecha.toDate()) }}</p>
+            </li>
+          </ol>
         </div>
-        <div v-if="form.estado_pago === 'pagado'" class="grid gap-1.5">
-          <Label for="fpago">Fecha de pago</Label>
-          <Input id="fpago" v-model="fechaPago" type="date" />
-        </div>
-      </div>
-
-      <div class="grid gap-1.5">
-        <Label>Estado de boleta</Label>
-        <Select :model-value="form.estado_boleta"
-          @update:model-value="(v) => (form.estado_boleta = String(v) as EstadoBoleta)">
-          <SelectTrigger class="max-w-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="e in ESTADOS_BOLETA" :key="e" :value="e">
-              {{ LABEL_ESTADO_BOLETA[e] }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div v-if="form.estado_boleta !== 'no_aplica'" class="grid gap-1.5">
-        <Label for="urlb">URL de la boleta (PDF)</Label>
-        <Input id="urlb" v-model="form.url_boleta" placeholder="https://…" />
-        <span class="text-sm text-muted-foreground">
-          Por ahora pega el link (Drive u otro). La subida directa se agrega después.
-        </span>
-      </div>
-
-      <div class="grid gap-1.5">
-        <Label for="notas">Notas</Label>
-        <Textarea id="notas" v-model="form.notas" />
-      </div>
-
-      <div class="flex flex-wrap gap-3">
-        <Button :disabled="guardando" @click="guardar">
-          {{ guardando ? 'Guardando…' : 'Guardar' }}
-        </Button>
-        <Button variant="outline" :disabled="guardando" @click="router.push({ name: 'cobranza' })">
-          Cancelar
-        </Button>
-        <Button v-if="esEdicion" type="button" variant="outline" @click="descargarPdf">
-          Descargar Orden de Cobro
-        </Button>
-        <Button v-if="esEdicion && form.estado_pago !== 'pagado'" type="button" variant="outline" :disabled="enviando"
-          @click="enviarCorreo">
-          {{ enviando ? 'Enviando…' : yaEnviado ? 'Reenviar por correo' : 'Enviar por correo' }}
-        </Button>
-      </div>
-
-      <div v-if="esEdicion && historial.length" class="grid gap-1.5">
-        <Label>Historial</Label>
-        <ul class="flex flex-col gap-1 text-sm text-muted-foreground">
-          <li v-for="(h, i) in historial" :key="i">
-            {{ LABEL_EVENTO_COBRO[h.tipo] }} — {{ formatoFecha.format(h.fecha.toDate()) }}
-          </li>
-        </ul>
       </div>
     </template>
 
