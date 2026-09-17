@@ -66,16 +66,12 @@ async function borrar(cliente: Cliente) {
       <Button @click="nuevo">Nuevo cliente</Button>
     </div>
 
-    <Input
-      v-model="busqueda"
-      placeholder="Buscar por nombre, RUT, email o contacto…"
-      class="max-w-sm"
-    />
+    <Input v-model="busqueda" placeholder="Buscar por nombre, RUT, email o contacto…" class="max-w-sm" />
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
     <div class="overflow-x-auto rounded-lg border">
-      <Table>
+      <Table class="text-sm">
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
@@ -95,9 +91,9 @@ async function borrar(cliente: Cliente) {
           </TableRow>
           <TableRow v-for="c in clientesFiltrados" v-else :key="c.id">
             <TableCell class="font-medium">{{ c.nombre }}</TableCell>
-            <TableCell>{{ c.rut }}</TableCell>
+            <TableCell class="font-mono text-xs">{{ c.rut }}</TableCell>
             <TableCell>{{ c.email }}</TableCell>
-            <TableCell>{{ c.telefono }}</TableCell>
+            <TableCell class="font-mono text-xs">+56 {{ c.telefono }}</TableCell>
             <TableCell>{{ c.contacto }}</TableCell>
             <TableCell class="whitespace-nowrap text-right">
               <Button variant="ghost" size="sm" @click="editar(c)">Editar</Button>
@@ -110,11 +106,6 @@ async function borrar(cliente: Cliente) {
       </Table>
     </div>
 
-    <ClienteFormDialog
-      v-model:open="dialogAbierto"
-      :cliente="clienteEditando"
-      :saving="guardando"
-      @save="guardar"
-    />
+    <ClienteFormDialog v-model:open="dialogAbierto" :cliente="clienteEditando" :saving="guardando" @save="guardar" />
   </div>
 </template>

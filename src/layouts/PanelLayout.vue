@@ -1,51 +1,20 @@
 <script setup lang="ts">
-import { RouterView, RouterLink, useRouter } from 'vue-router'
-import { Button } from '@/components/ui/button'
-import Logo from '@/components/Logo.vue'
-import { useAuthStore } from '@/stores/auth'
-
-const auth = useAuthStore()
-const router = useRouter()
-
-const nav = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/clientes', label: 'Clientes' },
-  { to: '/cotizaciones', label: 'Cotizaciones' },
-  { to: '/ots', label: 'Órdenes de trabajo' },
-  { to: '/cobranza', label: 'Cobranza' },
-  { to: '/suscripciones', label: 'Suscripciones' },
-  { to: '/configuracion', label: 'Configuración' },
-]
-
-async function handleLogout() {
-  await auth.logout()
-  router.push({ name: 'login' })
-}
+import { RouterView } from 'vue-router'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import AppSidebar from '@/components/AppSidebar.vue'
 </script>
 
 <template>
-  <div class="min-h-svh grid grid-cols-[220px_1fr]">
-    <aside class="flex flex-col gap-1 border-r bg-muted/30 p-4">
-      <Logo :width="150" class="mb-4 px-2" />
-      <RouterLink
-        v-for="item in nav"
-        :key="item.to"
-        :to="item.to"
-        class="rounded-md px-2 py-1.5 text-sm hover:bg-muted"
-        active-class="bg-muted font-medium"
-      >
-        {{ item.label }}
-      </RouterLink>
-    </aside>
-
-    <div class="flex flex-col">
-      <header class="flex items-center justify-between border-b px-6 py-3">
-        <span class="text-sm text-muted-foreground">{{ auth.user?.email }}</span>
-        <Button variant="outline" size="sm" @click="handleLogout">Cerrar sesión</Button>
+  <SidebarProvider>
+    <AppSidebar variant="inset" />
+    <SidebarInset
+      class="bg-transparent  md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none md:peer-data-[variant=inset]:mt-0">
+      <header class=" flex h-14 items-center gap-2 px-4 sticky top-0">
+        <SidebarTrigger />
       </header>
-      <main class="flex-1 p-6">
+      <main class="bg-background rounded-xl p-4 flex-1">
         <RouterView />
       </main>
-    </div>
-  </div>
+    </SidebarInset>
+  </SidebarProvider>
 </template>
