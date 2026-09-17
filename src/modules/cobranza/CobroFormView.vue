@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Loading from '@/components/Loading.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -206,7 +207,7 @@ async function enviarCorreo() {
     </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
-    <div v-if="cargando" class="text-sm text-muted-foreground">Cargando…</div>
+    <Loading v-if="cargando" label="Cargando cobro" />
 
     <template v-else>
       <p v-if="form.origen === 'ot'" class="text-sm text-muted-foreground">
@@ -217,10 +218,7 @@ async function enviarCorreo() {
       <div class="grid gap-1.5">
         <Label>Cliente</Label>
         <div class="flex gap-2">
-          <Select
-            :model-value="form.cliente_id"
-            @update:model-value="(v) => seleccionarCliente(String(v))"
-          >
+          <Select :model-value="form.cliente_id" @update:model-value="(v) => seleccionarCliente(String(v))">
             <SelectTrigger class="w-full">
               <SelectValue placeholder="Selecciona un cliente" />
             </SelectTrigger>
@@ -248,11 +246,11 @@ async function enviarCorreo() {
       <div class="grid grid-cols-2 gap-4">
         <div class="grid gap-1.5">
           <Label>Estado de pago</Label>
-          <Select
-            :model-value="form.estado_pago"
-            @update:model-value="(v) => (form.estado_pago = String(v) as EstadoPago)"
-          >
-            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+          <Select :model-value="form.estado_pago"
+            @update:model-value="(v) => (form.estado_pago = String(v) as EstadoPago)">
+            <SelectTrigger class="w-full">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
             </SelectContent>
@@ -266,11 +264,11 @@ async function enviarCorreo() {
 
       <div class="grid gap-1.5">
         <Label>Estado de boleta</Label>
-        <Select
-          :model-value="form.estado_boleta"
-          @update:model-value="(v) => (form.estado_boleta = String(v) as EstadoBoleta)"
-        >
-          <SelectTrigger class="max-w-xs"><SelectValue /></SelectTrigger>
+        <Select :model-value="form.estado_boleta"
+          @update:model-value="(v) => (form.estado_boleta = String(v) as EstadoBoleta)">
+          <SelectTrigger class="max-w-xs">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="e in ESTADOS_BOLETA" :key="e" :value="e">
               {{ LABEL_ESTADO_BOLETA[e] }}
@@ -302,13 +300,8 @@ async function enviarCorreo() {
         <Button v-if="esEdicion" type="button" variant="outline" @click="descargarPdf">
           Descargar Orden de Cobro
         </Button>
-        <Button
-          v-if="esEdicion && form.estado_pago !== 'pagado'"
-          type="button"
-          variant="outline"
-          :disabled="enviando"
-          @click="enviarCorreo"
-        >
+        <Button v-if="esEdicion && form.estado_pago !== 'pagado'" type="button" variant="outline" :disabled="enviando"
+          @click="enviarCorreo">
           {{ enviando ? 'Enviando…' : yaEnviado ? 'Reenviar por correo' : 'Enviar por correo' }}
         </Button>
       </div>
@@ -323,11 +316,7 @@ async function enviarCorreo() {
       </div>
     </template>
 
-    <ClienteFormDialog
-      v-model:open="dialogClienteAbierto"
-      :cliente="null"
-      :saving="guardandoCliente"
-      @save="onGuardarCliente"
-    />
+    <ClienteFormDialog v-model:open="dialogClienteAbierto" :cliente="null" :saving="guardandoCliente"
+      @save="onGuardarCliente" />
   </div>
 </template>
