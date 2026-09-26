@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { mesCicloActual } from '@/lib/formato'
 import { crearCobroDesdeOt, crearCobroDesdeSuscripcion } from '@/modules/cobranza/cobranza.service'
 import { crearOtDesdeCotizacion } from '@/modules/ots/ots.service'
-import type { Cobro } from '@/modules/cobranza/types'
+import { esProgramado, type Cobro } from '@/modules/cobranza/types'
 import type { Cotizacion } from '@/modules/cotizaciones/types'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
@@ -56,7 +56,14 @@ export function useDashboard() {
   )
 
   const cobrosPorEnviar = computed(() =>
-    cobros.value.filter((c) => c.estado_pago === 'pendiente'),
+    cobros.value.filter((c) => c.estado_pago === 'pendiente' && !esProgramado(c)),
+  )
+
+  // Pendientes con fecha de cobro futura: no son tarea todavía, solo se listan.
+  const cobrosProgramados = computed(() =>
+    cobros.value
+      .filter(esProgramado)
+      .sort((a, b) => a.fecha_cobro.localeCompare(b.fecha_cobro)),
   )
 
   const cobrosPorCobrar = computed(() =>
@@ -128,6 +135,7 @@ export function useDashboard() {
     otsSinCobro,
     cotizacionesSinOt,
     cobrosPorEnviar,
+    cobrosProgramados,
     cobrosPorCobrar,
     boletasPendientes,
     hayTareas,

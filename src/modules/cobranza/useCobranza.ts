@@ -1,8 +1,9 @@
 import { computed, ref } from 'vue'
+import { mesCicloActual } from '@/lib/formato'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
-import type { Cobro, CobroInput, EstadoBoleta, EstadoPago } from './types'
+import { mesDeCobro, type Cobro, type CobroInput, type EstadoBoleta, type EstadoPago } from './types'
 import {
   actualizarCobro,
   cambiarEstadoBoleta,
@@ -10,6 +11,7 @@ import {
   crearCobro,
   crearCobroDesdeOt,
   crearCobroDesdeSuscripcion,
+  cobroDeSuscripcionMes,
   eliminarCobro,
   listarCobros,
   obtenerCobro,
@@ -21,6 +23,8 @@ export function useCobranza() {
   const qc = useQueryClient()
   const busqueda = ref('')
   const filtroPago = ref<EstadoPago | 'todos'>('todos')
+  // 'YYYY-MM' o 'todos'. Parte siempre en el mes actual.
+  const filtroMes = ref<string>(mesCicloActual())
 
   // Un cambio en cobros afecta también ots (flag cobro_generado), el mapa de
   // cobros del mes de suscripciones, y el dashboard.
@@ -37,8 +41,18 @@ export function useCobranza() {
   const loading = computed(() => query.isPending.value)
   const error = computed(() => (query.error.value ? 'No se pudieron cargar los cobros.' : ''))
 
+  // Mes actual + meses con al menos un cobro, del más reciente al más antiguo.
+  const mesesDisponibles = computed(() =>
+    [...new Set([mesCicloActual(), ...cobros.value.map(mesDeCobro).filter(Boolean)])]
+      .sort()
+      .reverse(),
+  )
+
   const cobrosFiltrados = computed(() => {
     let lista = cobros.value
+    if (filtroMes.value !== 'todos') {
+      lista = lista.filter((c) => mesDeCobro(c) === filtroMes.value)
+    }
     if (filtroPago.value !== 'todos') {
       lista = lista.filter((c) => c.estado_pago === filtroPago.value)
     }
@@ -105,8 +119,12 @@ export function useCobranza() {
     error,
     busqueda,
     filtroPago,
+    filtroMes,
+    mesesDisponibles,
     cargar: () => query.refetch(),
     obtener: (id: string) => obtenerCobro(id),
+    cobroDeSuscripcionMes: (suscripcionId: string, mesCiclo: string) =>
+      cobroDeSuscripcionMes(suscripcionId, mesCiclo),
     crear: (input: CobroInput) => crearMut.mutateAsync(input),
     actualizar: (id: string, input: CobroInput) => actualizarMut.mutateAsync({ id, input }),
     marcarPago: (id: string, estado: EstadoPago, fecha: Date | null) =>

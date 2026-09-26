@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { ChevronLeftIcon, ChevronRightIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -18,11 +19,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatoCLP, mesCicloActual, mesCicloLegible } from '@/lib/formato'
+import { formatoCLP, mesCicloLegible } from '@/lib/formato'
+import type { Cobro } from '@/modules/cobranza/types'
 import { useCobranza } from '@/modules/cobranza/useCobranza'
-import { useCobrosSuscripcionMes } from '@/modules/cobranza/useCobrosSuscripcionMes'
+import { useCobrosSuscripcionAnio } from '@/modules/cobranza/useCobrosSuscripcionAnio'
+import GrillaMeses from './GrillaMeses.vue'
 import { useSuscripciones } from './useSuscripciones'
-import { ESTADOS_SUSCRIPCION, type EstadoSuscripcion, type Suscripcion } from './types'
+import {
+  ESTADOS_SUSCRIPCION,
+  mesInicioDe,
+  type EstadoSuscripcion,
+  type Suscripcion,
+} from './types'
 
 const router = useRouter()
 const {
@@ -35,13 +43,22 @@ const {
 } = useSuscripciones()
 const { generarDesdeSuscripcion } = useCobranza()
 
+// `${suscripcion_id}:${mes_ciclo}` del cobro que se está generando
 const generandoCobro = ref('')
-const mesActual = mesCicloActual()
-// suscripcion_id -> { id, numero } del cobro de este mes (se refresca solo al generar)
-const { mapa: cobrosDelMes } = useCobrosSuscripcionMes(mesActual)
+// La grilla parte en 2026 (inicio del control) y no muestra años futuros.
+const ANIO_MIN = 2026
+const ANIO_MAX = Math.max(ANIO_MIN, new Date().getFullYear())
+const anio = ref(ANIO_MAX)
+// suscripcion_id -> mes_ciclo -> cobro, para la grilla de 12 meses
+const { porSuscripcion } = useCobrosSuscripcionAnio(anio)
 
-function cobroDelMes(id: string) {
-  return cobrosDelMes.value.get(id)
+function mesGenerando(s: Suscripcion): string {
+  const [id, mes] = generandoCobro.value.split(':')
+  return id === s.id ? mes : ''
+}
+
+function abrirCobro(c: Cobro) {
+  router.push({ name: 'cobro-editar', params: { id: c.id } })
 }
 
 function editar(s: Suscripcion) {
@@ -53,16 +70,16 @@ async function onEstado(s: Suscripcion, valor: unknown) {
   if (estado && estado !== s.estado) await cambiarEstado(s.id, estado)
 }
 
-async function generarCobroMes(s: Suscripcion) {
+async function generarCobroMes(s: Suscripcion, mesCiclo: string) {
   if (
     !window.confirm(
-      `¿Generar el cobro de ${mesCicloLegible(mesActual)} para ${s.cliente_nombre}?`,
+      `¿Generar el cobro de ${mesCicloLegible(mesCiclo)} para ${s.cliente_nombre}?`,
     )
   )
     return
-  generandoCobro.value = s.id
+  generandoCobro.value = `${s.id}:${mesCiclo}`
   try {
-    await generarDesdeSuscripcion(s, mesActual)
+    await generarDesdeSuscripcion(s, mesCiclo)
   } catch (e) {
     console.error(e)
     window.alert('No se pudo generar el cobro.')
@@ -89,7 +106,17 @@ async function borrar(s: Suscripcion) {
       <Button @click="router.push({ name: 'suscripcion-nueva' })">Nueva suscripción</Button>
     </div>
 
-    <Input v-model="busqueda" placeholder="Buscar por cliente, descripción o estado…" class="max-w-sm" />
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <Input v-model="busqueda" placeholder="Buscar por cliente, descripción o estado…" class="max-w-sm" />
+      <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span class="flex items-center gap-1"><span class="size-3 rounded-[3px] bg-green-500" /> Pagado</span>
+        <span class="flex items-center gap-1"><span class="size-3 rounded-[3px] bg-amber-400" /> Debe</span>
+        <span class="flex items-center gap-1">
+          <span class="size-3 rounded-[3px] bg-zinc-300 dark:bg-zinc-600" /> Sin cobro
+        </span>
+        <span class="flex items-center gap-1"><span class="size-3 rounded-[3px] border" /> No aplica</span>
+      </div>
+    </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
@@ -101,7 +128,19 @@ async function borrar(s: Suscripcion) {
           <TableHead class="text-right">Monto / mes</TableHead>
           <TableHead class="w-16 text-center">Día</TableHead>
           <TableHead class="w-32">Estado</TableHead>
-          <TableHead class="w-52">Cobro de {{ mesCicloLegible(mesActual) }}</TableHead>
+          <TableHead class="w-72">
+            <div class="flex items-center gap-1">
+              <Button variant="ghost" size="icon-sm" aria-label="Año anterior" :disabled="anio <= ANIO_MIN"
+                @click="anio--">
+                <ChevronLeftIcon />
+              </Button>
+              <span class="font-mono">{{ anio }}</span>
+              <Button variant="ghost" size="icon-sm" aria-label="Año siguiente" :disabled="anio >= ANIO_MAX"
+                @click="anio++">
+                <ChevronRightIcon />
+              </Button>
+            </div>
+          </TableHead>
           <TableHead class="w-0"></TableHead>
         </TableRow>
       </TableHeader>
@@ -130,15 +169,8 @@ async function borrar(s: Suscripcion) {
             </Select>
           </TableCell>
           <TableCell>
-            <span v-if="s.estado !== 'activa'" class="text-sm text-muted-foreground">—</span>
-            <RouterLink v-else-if="cobroDelMes(s.id)"
-              :to="{ name: 'cobro-editar', params: { id: cobroDelMes(s.id)!.id } }"
-              class="text-sm text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-500">
-              ✓ Cobro N°{{ cobroDelMes(s.id)!.numero }}
-            </RouterLink>
-            <Button v-else variant="outline" size="sm" :disabled="generandoCobro === s.id" @click="generarCobroMes(s)">
-              {{ generandoCobro === s.id ? 'Generando…' : 'Generar cobro' }}
-            </Button>
+            <GrillaMeses :anio="anio" :mes-inicio="mesInicioDe(s)" :cobros="porSuscripcion.get(s.id)"
+              :generando="mesGenerando(s)" @abrir="abrirCobro" @generar="(mes) => generarCobroMes(s, mes)" />
           </TableCell>
           <TableCell class="whitespace-nowrap text-right">
             <Button variant="ghost" size="sm" @click="editar(s)">Editar</Button>

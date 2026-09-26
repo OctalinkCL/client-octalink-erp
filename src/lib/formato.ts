@@ -27,3 +27,17 @@ export function mesCicloLegible(mesCiclo: string): string {
   )
   return txt.charAt(0).toUpperCase() + txt.slice(1)
 }
+
+/** Fecha 'YYYY-MM-DD' para un día (por defecto, hoy), en hora local. */
+export function fechaISO(fecha = new Date()): string {
+  return `${fecha.getFullYear()}-${pad2(fecha.getMonth() + 1)}-${pad2(fecha.getDate())}`
+}
+
+/** '2026-10-31' → '31 oct 2026'. */
+export function fechaCorta(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }).format(
+    new Date(y, m - 1, d),
+  )
+}

@@ -49,3 +49,10 @@ export function cotizacionInputVacio(): CotizacionInput {
 export function calcularTotal(items: ItemCotizacion[]): number {
   return items.reduce((acc, i) => acc + (Math.trunc(Number(i.precio)) || 0), 0)
 }
+
+/** Colores de badge por estado. */
+export const CLASE_ESTADO_COTIZACION: Record<EstadoCotizacion, string> = {
+  pendiente: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  aceptada: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  rechazada: 'bg-destructive/10 text-destructive',
+}

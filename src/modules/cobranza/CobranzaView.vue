@@ -20,13 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatoCLP } from '@/lib/formato'
+import { fechaCorta, formatoCLP, mesCicloLegible } from '@/lib/formato'
 import { useCobranza } from './useCobranza'
 import {
+  CLASE_BOLETA,
+  CLASE_PAGO,
   ESTADOS_PAGO,
   LABEL_ESTADO_BOLETA,
+  esProgramado,
+  numeroCobro,
   type Cobro,
-  type EstadoBoleta,
   type EstadoPago,
 } from './types'
 
@@ -37,21 +40,13 @@ const {
   error,
   busqueda,
   filtroPago,
+  filtroMes,
+  mesesDisponibles,
   marcarPago,
   eliminar,
   cargar,
 } = useCobranza()
 
-const CLASE_PAGO: Record<EstadoPago, string> = {
-  pendiente: 'bg-muted text-muted-foreground',
-  enviado: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  pagado: 'bg-green-500/10 text-green-600 dark:text-green-400',
-}
-const CLASE_BOLETA: Record<EstadoBoleta, string> = {
-  no_aplica: 'bg-muted text-muted-foreground',
-  pendiente: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  enviada: 'bg-green-500/10 text-green-600 dark:text-green-400',
-}
 
 const editandoId = ref<string | null>(null)
 const enEdicion = (c: Cobro) => editandoId.value === c.id
@@ -86,7 +81,7 @@ function yaEnviado(c: Cobro): boolean {
 
 async function enviar(c: Cobro) {
   const verbo = yaEnviado(c) ? 'Reenviar' : 'Enviar'
-  if (!window.confirm(`¿${verbo} el cobro N°${c.numero} por correo al cliente?`)) return
+  if (!window.confirm(`¿${verbo} el cobro N°${numeroCobro(c)} por correo al cliente?`)) return
   enviandoId.value = c.id
   try {
     const { enviarCobro } = await import('./enviarCobro')
@@ -101,7 +96,7 @@ async function enviar(c: Cobro) {
 }
 
 async function borrar(c: Cobro) {
-  if (!window.confirm(`¿Eliminar el cobro N°${c.numero}?`)) return
+  if (!window.confirm(`¿Eliminar el cobro N°${numeroCobro(c)}?`)) return
   try {
     await eliminar(c.id)
   } catch (e) {
@@ -131,6 +126,17 @@ async function borrar(c: Cobro) {
           </SelectItem>
         </SelectContent>
       </Select>
+      <Select :model-value="filtroMes" @update:model-value="(v) => (filtroMes = String(v))">
+        <SelectTrigger class="w-48">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="todos">Todos los meses</SelectItem>
+          <SelectItem v-for="m in mesesDisponibles" :key="m" :value="m">
+            {{ mesCicloLegible(m) }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
@@ -156,8 +162,8 @@ async function borrar(c: Cobro) {
         <TableRow v-for="c in cobrosFiltrados" v-else :key="c.id">
           <TableCell @click="verDetalle(c)" class="group cursor-pointer">
             <span
-              class="inline-flex text-center size-5 font-mono bg-gray-100 text-zinc-600 rounded text-xs items-center justify-center mr-2">
-              {{ c.numero }}
+              class="inline-flex text-center h-5 min-w-5 px-1 font-mono bg-gray-100 text-zinc-600 rounded text-xs items-center justify-center mr-2">
+              {{ numeroCobro(c) }}
             </span>
             <span class="group-hover:underline">{{ c.cliente_nombre }}</span>
           </TableCell>
@@ -172,6 +178,10 @@ async function borrar(c: Cobro) {
                 <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
               </SelectContent>
             </Select>
+            <Badge v-else-if="esProgramado(c)" class="bg-violet-500/10 text-violet-600 dark:text-violet-400"
+              :title="`Pendiente, se cobra desde el ${fechaCorta(c.fecha_cobro)}`">
+              Desde {{ fechaCorta(c.fecha_cobro) }}
+            </Badge>
             <Badge v-else class="capitalize" :class="CLASE_PAGO[c.estado_pago]">
               {{ c.estado_pago }}
             </Badge>

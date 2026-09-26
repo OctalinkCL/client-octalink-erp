@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { Button } from '@/components/ui/button'
-import { formatoCLP, mesCicloLegible } from '@/lib/formato'
+import { fechaCorta, formatoCLP, mesCicloLegible } from '@/lib/formato'
 import { useDashboard } from './useDashboard'
 
 const {
@@ -14,6 +14,7 @@ const {
   otsSinCobro,
   cotizacionesSinOt,
   cobrosPorEnviar,
+  cobrosProgramados,
   cobrosPorCobrar,
   boletasPendientes,
   hayTareas,
@@ -181,5 +182,26 @@ const {
         </ul>
       </section>
     </template>
+
+    <!-- Programados: cobros con fecha futura. No cuentan como tarea hasta su fecha. -->
+    <section v-if="!loading && cobrosProgramados.length" class="rounded-lg border border-dashed">
+      <header class="border-b border-dashed px-4 py-2 text-sm font-semibold text-muted-foreground">
+        Cobros programados ({{ cobrosProgramados.length }})
+      </header>
+      <ul class="divide-y">
+        <li v-for="c in cobrosProgramados" :key="c.id"
+          class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
+          <span>
+            N°{{ c.numero }} — {{ c.cliente_nombre }}
+            <span class="text-muted-foreground">
+              · {{ formatoCLP(c.monto) }} · desde el {{ fechaCorta(c.fecha_cobro) }}
+            </span>
+          </span>
+          <Button as-child size="sm" variant="outline">
+            <RouterLink :to="{ name: 'cobro-editar', params: { id: c.id } }">Ver</RouterLink>
+          </Button>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>

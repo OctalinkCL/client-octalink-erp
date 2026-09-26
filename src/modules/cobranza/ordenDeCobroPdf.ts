@@ -1,15 +1,17 @@
 import pdfMake from 'pdfmake/build/pdfmake'
 import vfs from 'pdfmake/build/vfs_fonts'
 import type { TDocumentDefinitions } from 'pdfmake/interfaces'
-import { formatoCLP } from '@/lib/formato'
+import { fechaISO, formatoCLP } from '@/lib/formato'
 import { logoSvg } from '@/lib/logo'
 import { OCTALINK } from '@/lib/octalink'
-import type { Cobro } from './types'
+import { fechaEmisionDe, numeroCobro, type Cobro } from './types'
 
 pdfMake.addVirtualFileSystem(vfs)
 
-function hoy(): string {
-  return new Intl.DateTimeFormat('es-CL', { dateStyle: 'long' }).format(new Date())
+// Fecha del documento: la de emisión del cobro (o hoy, si no tiene).
+function fechaDocumento(cobro: Cobro): string {
+  const [y, m, d] = (fechaEmisionDe(cobro) || fechaISO()).split('-').map(Number)
+  return new Intl.DateTimeFormat('es-CL', { dateStyle: 'long' }).format(new Date(y, m - 1, d))
 }
 
 function definicion(cobro: Cobro): TDocumentDefinitions {
@@ -27,8 +29,8 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
           ],
           [
             { text: 'ORDEN DE COBRO', style: 'titulo', alignment: 'right' },
-            { text: `N° ${cobro.numero}`, alignment: 'right' },
-            { text: hoy(), alignment: 'right', color: '#666' },
+            { text: `N° ${numeroCobro(cobro)}`, alignment: 'right' },
+            { text: fechaDocumento(cobro), alignment: 'right', color: '#666' },
           ],
         ],
       },
@@ -94,7 +96,7 @@ function definicion(cobro: Cobro): TDocumentDefinitions {
 }
 
 export function descargarOrdenDeCobro(cobro: Cobro): void {
-  pdfMake.createPdf(definicion(cobro)).download(`orden-de-cobro-${cobro.numero}.pdf`)
+  pdfMake.createPdf(definicion(cobro)).download(`orden-de-cobro-${numeroCobro(cobro)}.pdf`)
 }
 
 export function base64OrdenDeCobro(cobro: Cobro): Promise<string> {
