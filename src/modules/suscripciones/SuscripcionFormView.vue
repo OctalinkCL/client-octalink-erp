@@ -21,6 +21,7 @@ import type { ClienteInput } from '@/modules/clientes/types'
 import { useSuscripciones } from './useSuscripciones'
 import {
   ESTADOS_SUSCRIPCION,
+  mesInicioDe,
   suscripcionInputVacio,
   type EstadoSuscripcion,
   type SuscripcionInput,
@@ -58,6 +59,7 @@ onMounted(async () => {
         descripcion: s.descripcion,
         monto: s.monto,
         dia_cobro: s.dia_cobro,
+        mes_inicio: mesInicioDe(s),
         emite_boleta: s.emite_boleta,
         estado: s.estado,
         cotizacion_id: s.cotizacion_id,
@@ -103,6 +105,10 @@ async function guardar() {
   }
   if (!form.descripcion.trim()) {
     error.value = 'Escribe una descripción.'
+    return
+  }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(form.mes_inicio)) {
+    error.value = 'Indica el mes de inicio (AAAA-MM).'
     return
   }
 
@@ -192,6 +198,14 @@ async function guardar() {
           <Input id="dia" v-model.number="form.dia_cobro" type="number" min="1" max="28" step="1" />
           <span class="text-sm text-muted-foreground">1 a 28</span>
         </div>
+      </div>
+
+      <div class="grid max-w-xs gap-1.5">
+        <Label for="inicio">Mes de inicio</Label>
+        <Input id="inicio" v-model="form.mes_inicio" type="month" placeholder="AAAA-MM" />
+        <span class="text-sm text-muted-foreground">
+          Los meses anteriores no aparecen como deuda en la grilla.
+        </span>
       </div>
 
       <label class="flex items-center gap-2 text-sm">

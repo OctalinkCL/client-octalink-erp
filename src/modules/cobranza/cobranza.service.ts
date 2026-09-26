@@ -67,24 +67,21 @@ export async function cobroDeSuscripcionMes(
 }
 
 /**
- * Cobros de suscripción de un mes de ciclo, indexados por `suscripcion_id`.
- * Para saber de un vistazo qué suscripciones ya tienen el cobro del mes.
+ * Cobros de suscripción de un año (por `mes_ciclo`), para la grilla de 12 meses.
+ * Rango sobre un solo campo: no requiere índice compuesto. Los cobros de OT
+ * tienen `mes_ciclo: ''` y quedan fuera del rango.
  */
-export async function cobrosDeSuscripcionesDelMes(
-  mesCiclo: string,
-): Promise<Map<string, { id: string; numero: number }>> {
-  const snap = await getDocs(query(cobrosCol, where('mes_ciclo', '==', mesCiclo)))
-  const map = new Map<string, { id: string; numero: number }>()
-  for (const d of snap.docs) {
-    const data = d.data()
-    if (data.suscripcion_id) {
-      map.set(data.suscripcion_id as string, {
-        id: d.id,
-        numero: data.numero as number,
-      })
-    }
-  }
-  return map
+export async function cobrosDeSuscripcionesDelAnio(anio: number): Promise<Cobro[]> {
+  const snap = await getDocs(
+    query(
+      cobrosCol,
+      where('mes_ciclo', '>=', `${anio}-01`),
+      where('mes_ciclo', '<=', `${anio}-12`),
+    ),
+  )
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as Cobro)
+    .filter((c) => !!c.suscripcion_id)
 }
 
 // Asigna el correlativo en una transacción y crea el cobro.
@@ -140,6 +137,7 @@ export async function crearCobroDesdeOt(
       mes_ciclo: '',
       concepto: ot.descripcion || `OT N°${ot.numero}`,
       monto: ot.monto,
+      fecha_cobro: '',
       estado_pago: 'pendiente',
       estado_boleta: ot.emite_boleta ? 'pendiente' : 'no_aplica',
       url_boleta: '',
@@ -175,6 +173,7 @@ export async function crearCobroDesdeSuscripcion(
     mes_ciclo: mesCiclo,
     concepto: `${s.descripcion || 'Suscripción'} — ${mesCicloLegible(mesCiclo)}`,
     monto: s.monto,
+    fecha_cobro: '',
     estado_pago: 'pendiente',
     estado_boleta: s.emite_boleta ? 'pendiente' : 'no_aplica',
     url_boleta: '',

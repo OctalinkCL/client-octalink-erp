@@ -81,6 +81,7 @@ onMounted(async () => {
         mes_ciclo: c.mes_ciclo,
         concepto: c.concepto,
         monto: c.monto,
+        fecha_cobro: c.fecha_cobro ?? '',
         estado_pago: c.estado_pago,
         estado_boleta: c.estado_boleta,
         url_boleta: c.url_boleta,
@@ -239,10 +240,19 @@ async function enviarCorreo() {
             <Textarea id="concepto" v-model="form.concepto" placeholder="Qué se está cobrando" />
           </div>
 
-          <div class="grid max-w-xs gap-1.5">
-            <Label for="monto">Monto (CLP)</Label>
-            <Input id="monto" v-model.number="form.monto" type="number" min="0" step="1" />
-            <span class="text-sm text-muted-foreground">{{ formatoCLP(form.monto) }}</span>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-1.5">
+              <Label for="monto">Monto (CLP)</Label>
+              <Input id="monto" v-model.number="form.monto" type="number" min="0" step="1" />
+              <span class="text-sm text-muted-foreground">{{ formatoCLP(form.monto) }}</span>
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="fcobro">Cobrar a partir de</Label>
+              <Input id="fcobro" v-model="form.fecha_cobro" type="date" />
+              <span class="text-sm text-muted-foreground">
+                Opcional. Vacío = cobrar ya. Con fecha futura queda como programado.
+              </span>
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">

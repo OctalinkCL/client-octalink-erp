@@ -1,4 +1,5 @@
 import type { Timestamp } from 'firebase/firestore'
+import { fechaISO } from '@/lib/formato'
 
 export const ESTADOS_PAGO = ['pendiente', 'enviado', 'pagado'] as const
 export type EstadoPago = (typeof ESTADOS_PAGO)[number]
@@ -38,6 +39,9 @@ export interface Cobro {
   mes_ciclo: string // 'YYYY-MM' para cobros de suscripción
   concepto: string
   monto: number
+  // 'YYYY-MM-DD' desde cuando corresponde enviar el cobro. '' = cobrar ya.
+  // Docs anteriores al campo no lo tienen (undefined) y se tratan como ''.
+  fecha_cobro: string
   estado_pago: EstadoPago
   estado_boleta: EstadoBoleta
   fecha_pago: Timestamp | null
@@ -67,6 +71,7 @@ export function cobroInputVacio(): CobroInput {
     mes_ciclo: '',
     concepto: '',
     monto: 0,
+    fecha_cobro: '',
     estado_pago: 'pendiente',
     estado_boleta: 'no_aplica',
     url_boleta: '',
@@ -78,4 +83,9 @@ export const LABEL_ESTADO_BOLETA: Record<EstadoBoleta, string> = {
   no_aplica: 'sin boleta',
   pendiente: 'boleta pendiente',
   enviada: 'boleta enviada',
+}
+
+/** Pendiente con fecha de cobro futura: todavía no toca enviarlo. */
+export function esProgramado(c: Pick<Cobro, 'estado_pago' | 'fecha_cobro'>): boolean {
+  return c.estado_pago === 'pendiente' && !!c.fecha_cobro && c.fecha_cobro > fechaISO()
 }

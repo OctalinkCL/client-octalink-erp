@@ -20,11 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatoCLP } from '@/lib/formato'
+import { fechaCorta, formatoCLP } from '@/lib/formato'
 import { useCobranza } from './useCobranza'
 import {
   ESTADOS_PAGO,
   LABEL_ESTADO_BOLETA,
+  esProgramado,
   type Cobro,
   type EstadoBoleta,
   type EstadoPago,
@@ -172,6 +173,10 @@ async function borrar(c: Cobro) {
                 <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e">{{ e }}</SelectItem>
               </SelectContent>
             </Select>
+            <Badge v-else-if="esProgramado(c)" class="bg-violet-500/10 text-violet-600 dark:text-violet-400"
+              :title="`Pendiente, se cobra desde el ${fechaCorta(c.fecha_cobro)}`">
+              Desde {{ fechaCorta(c.fecha_cobro) }}
+            </Badge>
             <Badge v-else class="capitalize" :class="CLASE_PAGO[c.estado_pago]">
               {{ c.estado_pago }}
             </Badge>
