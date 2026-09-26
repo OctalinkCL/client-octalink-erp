@@ -42,3 +42,16 @@ export function otInputVacio(): OtInput {
     notas: '',
   }
 }
+
+export const LABEL_ESTADO_OT: Record<EstadoOt, string> = {
+  pendiente: 'Pendiente',
+  en_curso: 'En curso',
+  completada: 'Completada',
+}
+
+/** Colores de badge por estado. */
+export const CLASE_ESTADO_OT: Record<EstadoOt, string> = {
+  pendiente: 'bg-muted text-muted-foreground',
+  en_curso: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  completada: 'bg-green-500/10 text-green-600 dark:text-green-400',
+}

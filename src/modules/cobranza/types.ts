@@ -115,3 +115,15 @@ export function fechaEmisionDe(c: Pick<Cobro, 'fecha_emision' | 'creado_en'>): s
 export function mesDeCobro(c: Pick<Cobro, 'mes_ciclo' | 'fecha_emision' | 'creado_en'>): string {
   return c.mes_ciclo || fechaEmisionDe(c).slice(0, 7)
 }
+
+/** Colores de badge por estado (Cobranza y detalle del cobro). */
+export const CLASE_PAGO: Record<EstadoPago, string> = {
+  pendiente: 'bg-muted text-muted-foreground',
+  enviado: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  pagado: 'bg-green-500/10 text-green-600 dark:text-green-400',
+}
+export const CLASE_BOLETA: Record<EstadoBoleta, string> = {
+  no_aplica: 'bg-muted text-muted-foreground',
+  pendiente: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  enviada: 'bg-green-500/10 text-green-600 dark:text-green-400',
+}

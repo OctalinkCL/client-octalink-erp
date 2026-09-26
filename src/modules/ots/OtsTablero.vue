@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatoCLP } from '@/lib/formato'
-import { ESTADOS_OT, type EstadoOt, type Ot } from './types'
+import { ESTADOS_OT, LABEL_ESTADO_OT, type EstadoOt, type Ot } from './types'
 
 // Vista kanban de OTs. Solo presentación: los cambios los hace OtsView vía emits,
 // con la misma lógica que usa la tabla. Drag & drop nativo HTML5 (pensado para desktop).
@@ -19,12 +19,6 @@ const emit = defineEmits<{
   editar: [ot: Ot]
   'generar-cobro': [ot: Ot]
 }>()
-
-const LABEL_ESTADO: Record<EstadoOt, string> = {
-  pendiente: 'Pendiente',
-  en_curso: 'En curso',
-  completada: 'Completada',
-}
 
 const arrastrando = ref<Ot | null>(null)
 const columnaSobre = ref<EstadoOt | null>(null)
@@ -64,7 +58,7 @@ function onDrop(estado: EstadoOt) {
       @drop.prevent="onDrop(estado)"
     >
       <header class="flex items-center justify-between px-1 py-1">
-        <h2 class="text-sm font-medium">{{ LABEL_ESTADO[estado] }}</h2>
+        <h2 class="text-sm font-medium">{{ LABEL_ESTADO_OT[estado] }}</h2>
         <span class="text-xs text-muted-foreground">{{ otsDe(estado).length }}</span>
       </header>
 

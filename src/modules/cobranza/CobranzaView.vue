@@ -23,12 +23,13 @@ import {
 import { fechaCorta, formatoCLP, mesCicloLegible } from '@/lib/formato'
 import { useCobranza } from './useCobranza'
 import {
+  CLASE_BOLETA,
+  CLASE_PAGO,
   ESTADOS_PAGO,
   LABEL_ESTADO_BOLETA,
   esProgramado,
   numeroCobro,
   type Cobro,
-  type EstadoBoleta,
   type EstadoPago,
 } from './types'
 
@@ -46,16 +47,6 @@ const {
   cargar,
 } = useCobranza()
 
-const CLASE_PAGO: Record<EstadoPago, string> = {
-  pendiente: 'bg-muted text-muted-foreground',
-  enviado: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  pagado: 'bg-green-500/10 text-green-600 dark:text-green-400',
-}
-const CLASE_BOLETA: Record<EstadoBoleta, string> = {
-  no_aplica: 'bg-muted text-muted-foreground',
-  pendiente: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  enviada: 'bg-green-500/10 text-green-600 dark:text-green-400',
-}
 
 const editandoId = ref<string | null>(null)
 const enEdicion = (c: Cobro) => editandoId.value === c.id

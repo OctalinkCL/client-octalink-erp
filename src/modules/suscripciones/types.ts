@@ -54,3 +54,9 @@ export function mesInicioDe(s: Pick<Suscripcion, 'mes_inicio' | 'creado_en'>): s
   if (s.mes_inicio) return s.mes_inicio
   return s.creado_en ? mesCicloActual(s.creado_en.toDate()) : ''
 }
+
+/** Colores de badge por estado. */
+export const CLASE_ESTADO_SUSCRIPCION: Record<EstadoSuscripcion, string> = {
+  activa: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  pausada: 'bg-muted text-muted-foreground',
+}
