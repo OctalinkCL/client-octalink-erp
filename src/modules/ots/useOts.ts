@@ -53,7 +53,19 @@ export function useOts() {
 
   const estadoMut = useMutation({
     mutationFn: (v: { id: string; estado: EstadoOt }) => cambiarEstadoOt(v.id, v.estado),
-    onSuccess: invalidar,
+    // Optimista: el tablero mueve la tarjeta al soltar, sin esperar a Firestore.
+    onMutate: async (v: { id: string; estado: EstadoOt }) => {
+      await qc.cancelQueries({ queryKey: KEY })
+      const prev = qc.getQueryData<Ot[]>(KEY)
+      qc.setQueryData<Ot[]>(KEY, (old = []) =>
+        old.map((o) => (o.id === v.id ? { ...o, estado: v.estado } : o)),
+      )
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev)
+    },
+    onSettled: invalidar,
   })
 
   const generarMut = useMutation({

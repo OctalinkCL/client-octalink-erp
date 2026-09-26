@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLocalStorage, useMediaQuery } from '@vueuse/core'
+import { KanbanIcon, ListIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,6 +23,7 @@ import {
 import { formatoCLP } from '@/lib/formato'
 import { useCobranza } from '@/modules/cobranza/useCobranza'
 import { useOts } from './useOts'
+import OtsTablero from './OtsTablero.vue'
 import { ESTADOS_OT, type EstadoOt, type Ot } from './types'
 
 const router = useRouter()
@@ -29,13 +32,24 @@ const { generarDesdeOt } = useCobranza()
 
 const generandoCobro = ref('')
 
+// Vista lista/tablero. El tablero es solo para desktop; en el celu siempre lista.
+const vista = useLocalStorage<'lista' | 'tablero'>('ots-vista', 'lista')
+const esDesktop = useMediaQuery('(min-width: 768px)')
+const verTablero = computed(() => esDesktop.value && vista.value === 'tablero')
+
 function editar(o: Ot) {
   router.push({ name: 'ot-editar', params: { id: o.id } })
 }
 
 async function onEstado(o: Ot, valor: unknown) {
   const estado = String(valor) as EstadoOt
-  if (estado && estado !== o.estado) await cambiarEstado(o.id, estado)
+  if (!estado || estado === o.estado) return
+  try {
+    await cambiarEstado(o.id, estado)
+  } catch (e) {
+    console.error(e)
+    window.alert('No se pudo cambiar el estado.')
+  }
 }
 
 async function borrar(o: Ot) {
@@ -71,15 +85,45 @@ async function generarCobro(o: Ot) {
       <Button @click="router.push({ name: 'ot-nueva' })">Nueva OT</Button>
     </div>
 
-    <Input
-      v-model="busqueda"
-      placeholder="Buscar por número, cliente, descripción o estado…"
-      class="max-w-sm"
-    />
+    <div class="flex items-center justify-between gap-4">
+      <Input
+        v-model="busqueda"
+        placeholder="Buscar por número, cliente, descripción o estado…"
+        class="max-w-sm"
+      />
+      <div class="hidden gap-1 md:flex">
+        <Button
+          size="sm"
+          :variant="vista === 'lista' ? 'default' : 'outline'"
+          @click="vista = 'lista'"
+        >
+          <ListIcon />
+          Lista
+        </Button>
+        <Button
+          size="sm"
+          :variant="vista === 'tablero' ? 'default' : 'outline'"
+          @click="vista = 'tablero'"
+        >
+          <KanbanIcon />
+          Tablero
+        </Button>
+      </div>
+    </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
-    <div class="overflow-x-auto rounded-lg border">
+    <OtsTablero
+      v-if="verTablero"
+      :ots="otsFiltradas"
+      :loading="loading"
+      :generando-cobro="generandoCobro"
+      @cambiar-estado="(o, e) => onEstado(o, e)"
+      @editar="editar"
+      @generar-cobro="generarCobro"
+    />
+
+    <div v-else class="overflow-x-auto rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
