@@ -20,12 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { fechaCorta, formatoCLP } from '@/lib/formato'
+import { fechaCorta, formatoCLP, mesCicloLegible } from '@/lib/formato'
 import { useCobranza } from './useCobranza'
 import {
   ESTADOS_PAGO,
   LABEL_ESTADO_BOLETA,
   esProgramado,
+  numeroCobro,
   type Cobro,
   type EstadoBoleta,
   type EstadoPago,
@@ -38,6 +39,8 @@ const {
   error,
   busqueda,
   filtroPago,
+  filtroMes,
+  mesesDisponibles,
   marcarPago,
   eliminar,
   cargar,
@@ -87,7 +90,7 @@ function yaEnviado(c: Cobro): boolean {
 
 async function enviar(c: Cobro) {
   const verbo = yaEnviado(c) ? 'Reenviar' : 'Enviar'
-  if (!window.confirm(`¿${verbo} el cobro N°${c.numero} por correo al cliente?`)) return
+  if (!window.confirm(`¿${verbo} el cobro N°${numeroCobro(c)} por correo al cliente?`)) return
   enviandoId.value = c.id
   try {
     const { enviarCobro } = await import('./enviarCobro')
@@ -102,7 +105,7 @@ async function enviar(c: Cobro) {
 }
 
 async function borrar(c: Cobro) {
-  if (!window.confirm(`¿Eliminar el cobro N°${c.numero}?`)) return
+  if (!window.confirm(`¿Eliminar el cobro N°${numeroCobro(c)}?`)) return
   try {
     await eliminar(c.id)
   } catch (e) {
@@ -132,6 +135,17 @@ async function borrar(c: Cobro) {
           </SelectItem>
         </SelectContent>
       </Select>
+      <Select :model-value="filtroMes" @update:model-value="(v) => (filtroMes = String(v))">
+        <SelectTrigger class="w-48">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="todos">Todos los meses</SelectItem>
+          <SelectItem v-for="m in mesesDisponibles" :key="m" :value="m">
+            {{ mesCicloLegible(m) }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
@@ -157,8 +171,8 @@ async function borrar(c: Cobro) {
         <TableRow v-for="c in cobrosFiltrados" v-else :key="c.id">
           <TableCell @click="verDetalle(c)" class="group cursor-pointer">
             <span
-              class="inline-flex text-center size-5 font-mono bg-gray-100 text-zinc-600 rounded text-xs items-center justify-center mr-2">
-              {{ c.numero }}
+              class="inline-flex text-center h-5 min-w-5 px-1 font-mono bg-gray-100 text-zinc-600 rounded text-xs items-center justify-center mr-2">
+              {{ numeroCobro(c) }}
             </span>
             <span class="group-hover:underline">{{ c.cliente_nombre }}</span>
           </TableCell>

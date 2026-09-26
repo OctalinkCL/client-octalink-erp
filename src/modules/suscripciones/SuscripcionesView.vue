@@ -45,7 +45,10 @@ const { generarDesdeSuscripcion } = useCobranza()
 
 // `${suscripcion_id}:${mes_ciclo}` del cobro que se está generando
 const generandoCobro = ref('')
-const anio = ref(new Date().getFullYear())
+// La grilla parte en 2026 (inicio del control) y no muestra años futuros.
+const ANIO_MIN = 2026
+const ANIO_MAX = Math.max(ANIO_MIN, new Date().getFullYear())
+const anio = ref(ANIO_MAX)
 // suscripcion_id -> mes_ciclo -> cobro, para la grilla de 12 meses
 const { porSuscripcion } = useCobrosSuscripcionAnio(anio)
 
@@ -127,11 +130,13 @@ async function borrar(s: Suscripcion) {
           <TableHead class="w-32">Estado</TableHead>
           <TableHead class="w-72">
             <div class="flex items-center gap-1">
-              <Button variant="ghost" size="icon-sm" aria-label="Año anterior" @click="anio--">
+              <Button variant="ghost" size="icon-sm" aria-label="Año anterior" :disabled="anio <= ANIO_MIN"
+                @click="anio--">
                 <ChevronLeftIcon />
               </Button>
               <span class="font-mono">{{ anio }}</span>
-              <Button variant="ghost" size="icon-sm" aria-label="Año siguiente" @click="anio++">
+              <Button variant="ghost" size="icon-sm" aria-label="Año siguiente" :disabled="anio >= ANIO_MAX"
+                @click="anio++">
                 <ChevronRightIcon />
               </Button>
             </div>

@@ -24,6 +24,9 @@ import {
   LABEL_ESTADO_BOLETA,
   LABEL_EVENTO_COBRO,
   cobroInputVacio,
+  fechaEmisionDe,
+  mesDeCobro,
+  numeroCobro,
   type CobroInput,
   type EstadoBoleta,
   type EstadoPago,
@@ -39,7 +42,7 @@ const id = computed(() => (route.params.id as string) || '')
 const esEdicion = computed(() => !!id.value)
 
 const { clientes, crear: crearCliente } = useClientes()
-const { obtener, crear, actualizar, marcarPago } = useCobranza()
+const { obtener, crear, actualizar, marcarPago, cobroDeSuscripcionMes } = useCobranza()
 
 const form = reactive<CobroInput>(cobroInputVacio())
 const fechaPago = ref('') // 'YYYY-MM-DD'
@@ -78,9 +81,10 @@ onMounted(async () => {
         cotizacion_id: c.cotizacion_id,
         cotizacion_numero: c.cotizacion_numero,
         suscripcion_id: c.suscripcion_id,
-        mes_ciclo: c.mes_ciclo,
+        mes_ciclo: mesDeCobro(c),
         concepto: c.concepto,
         monto: c.monto,
+        fecha_emision: fechaEmisionDe(c),
         fecha_cobro: c.fecha_cobro ?? '',
         estado_pago: c.estado_pago,
         estado_boleta: c.estado_boleta,
@@ -103,6 +107,11 @@ onMounted(async () => {
 
 function seleccionarCliente(clienteId: string) {
   const c = clientes.value.find((x) => x.id === clienteId)
+  // Un cobro de suscripción que cambia de cliente deja de ser de esa suscripción.
+  if (clienteId !== form.cliente_id && form.suscripcion_id) {
+    form.suscripcion_id = ''
+    if (form.origen === 'suscripcion') form.origen = 'directo'
+  }
   form.cliente_id = clienteId
   form.cliente_nombre = c?.nombre ?? ''
 }
@@ -136,6 +145,27 @@ async function guardar() {
   if (!form.concepto.trim()) {
     error.value = 'Escribe un concepto.'
     return
+  }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(form.mes_ciclo)) {
+    error.value = 'Indica el mes del cobro (AAAA-MM).'
+    return
+  }
+  if (!form.fecha_emision) {
+    error.value = 'Indica la fecha de emisión.'
+    return
+  }
+  if (form.suscripcion_id) {
+    try {
+      const otro = await cobroDeSuscripcionMes(form.suscripcion_id, form.mes_ciclo)
+      if (otro && otro.id !== id.value) {
+        error.value = `Ese mes ya tiene el cobro N°${numeroCobro(otro)}.`
+        return
+      }
+    } catch (e) {
+      console.error(e)
+      error.value = 'No se pudo verificar el mes de la suscripción.'
+      return
+    }
   }
 
   const payload: CobroInput = {
@@ -232,6 +262,19 @@ async function enviarCorreo() {
               <Button type="button" variant="outline" @click="dialogClienteAbierto = true">
                 ＋ Nuevo
               </Button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid content-start gap-1.5">
+              <Label for="mesciclo">Mes del cobro</Label>
+              <Input id="mesciclo" v-model="form.mes_ciclo" type="month" placeholder="AAAA-MM" />
+              <span class="text-sm text-muted-foreground">El mes en que aparece en Cobranza.</span>
+            </div>
+            <div class="grid content-start gap-1.5">
+              <Label for="femision">Fecha de emisión</Label>
+              <Input id="femision" v-model="form.fecha_emision" type="date" />
+              <span class="text-sm text-muted-foreground">La fecha que va en la Orden de Cobro.</span>
             </div>
           </div>
 

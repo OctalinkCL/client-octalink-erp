@@ -16,7 +16,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { mesCicloLegible } from '@/lib/formato'
+import { fechaISO, mesCicloActual, mesCicloLegible } from '@/lib/formato'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
 import type { Cobro, CobroInput, EstadoBoleta, EstadoPago, TipoEventoCobro } from './types'
@@ -36,7 +36,9 @@ async function marcarOtConCobro(otId: string, valor: boolean): Promise<void> {
 
 export async function listarCobros(): Promise<Cobro[]> {
   const snap = await getDocs(query(cobrosCol, orderBy('numero', 'desc')))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Cobro)
+  const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Cobro)
+  // Los históricos (P<n>) tienen su propia serie: van al final, no mezclados.
+  return [...lista.filter((c) => !c.historico), ...lista.filter((c) => c.historico)]
 }
 
 export async function obtenerCobro(id: string): Promise<Cobro | null> {
@@ -68,8 +70,8 @@ export async function cobroDeSuscripcionMes(
 
 /**
  * Cobros de suscripción de un año (por `mes_ciclo`), para la grilla de 12 meses.
- * Rango sobre un solo campo: no requiere índice compuesto. Los cobros de OT
- * tienen `mes_ciclo: ''` y quedan fuera del rango.
+ * Rango sobre un solo campo: no requiere índice compuesto. El rango también trae
+ * cobros de OT/directos del año; se descartan por no tener `suscripcion_id`.
  */
 export async function cobrosDeSuscripcionesDelAnio(anio: number): Promise<Cobro[]> {
   const snap = await getDocs(
@@ -134,9 +136,10 @@ export async function crearCobroDesdeOt(
       cotizacion_id: ot.cotizacion_id,
       cotizacion_numero: ot.cotizacion_numero,
       suscripcion_id: '',
-      mes_ciclo: '',
+      mes_ciclo: mesCicloActual(),
       concepto: ot.descripcion || `OT N°${ot.numero}`,
       monto: ot.monto,
+      fecha_emision: fechaISO(),
       fecha_cobro: '',
       estado_pago: 'pendiente',
       estado_boleta: ot.emite_boleta ? 'pendiente' : 'no_aplica',
@@ -152,16 +155,9 @@ export async function crearCobroDesdeOt(
   return result
 }
 
-export async function crearCobroDesdeSuscripcion(
-  s: Suscripcion,
-  mesCiclo: string,
-): Promise<{ id: string; numero: number; yaExistia: boolean }> {
-  const existente = await cobroDeSuscripcionMes(s.id, mesCiclo)
-  if (existente) {
-    return { id: existente.id, numero: existente.numero, yaExistia: true }
-  }
-
-  const input: CobroInput = {
+/** Datos del cobro mensual de una suscripción (sin número ni historial). */
+export function inputDesdeSuscripcion(s: Suscripcion, mesCiclo: string): CobroInput {
+  return {
     cliente_id: s.cliente_id,
     cliente_nombre: s.cliente_nombre,
     origen: 'suscripcion',
@@ -173,15 +169,26 @@ export async function crearCobroDesdeSuscripcion(
     mes_ciclo: mesCiclo,
     concepto: `${s.descripcion || 'Suscripción'} — ${mesCicloLegible(mesCiclo)}`,
     monto: s.monto,
+    fecha_emision: fechaISO(),
     fecha_cobro: '',
     estado_pago: 'pendiente',
     estado_boleta: s.emite_boleta ? 'pendiente' : 'no_aplica',
     url_boleta: '',
     notas: '',
   }
+}
+
+export async function crearCobroDesdeSuscripcion(
+  s: Suscripcion,
+  mesCiclo: string,
+): Promise<{ id: string; numero: number; yaExistia: boolean }> {
+  const existente = await cobroDeSuscripcionMes(s.id, mesCiclo)
+  if (existente) {
+    return { id: existente.id, numero: existente.numero, yaExistia: true }
+  }
 
   const ref = doc(cobrosCol)
-  const numero = await asignarNumeroYCrear(ref, input)
+  const numero = await asignarNumeroYCrear(ref, inputDesdeSuscripcion(s, mesCiclo))
   return { id: ref.id, numero, yaExistia: false }
 }
 
@@ -194,12 +201,14 @@ export async function cambiarEstadoPago(
   estado_pago: EstadoPago,
   fecha_pago: Date | null,
 ): Promise<void> {
+  const previo = await obtenerCobro(id)
   const patch: Record<string, unknown> = {
     estado_pago,
     fecha_pago: estado_pago === 'pagado' ? (fecha_pago ?? new Date()) : null,
     actualizado_en: serverTimestamp(),
   }
-  if (estado_pago === 'pagado') {
+  // Solo al pasar a pagado: guardar de nuevo un cobro ya pagado no repite el evento.
+  if (estado_pago === 'pagado' && previo?.estado_pago !== 'pagado') {
     patch.historial = arrayUnion({ tipo: 'pagado', fecha: Timestamp.now() })
   }
   await updateDoc(doc(cobrosCol, id), patch)

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { formatoCLP, mesCicloActual, mesCicloLegible } from '@/lib/formato'
-import type { Cobro } from '@/modules/cobranza/types'
+import { numeroCobro, type Cobro } from '@/modules/cobranza/types'
 
 // 12 cuadrados de un año para una suscripción. Solo presentación: el clic se
 // emite y SuscripcionesView decide (abrir el cobro o generarlo).
@@ -48,7 +48,7 @@ const meses = computed(() =>
     else estado = 'sin_cobro'
 
     let titulo = `${mesCicloLegible(mes)} · ${LABEL[estado]}`
-    if (cobro) titulo += ` · Cobro N°${cobro.numero} · ${formatoCLP(cobro.monto)}`
+    if (cobro) titulo += ` · Cobro N°${numeroCobro(cobro)} · ${formatoCLP(cobro.monto)}`
     else if (estado === 'sin_cobro') titulo += ' · clic para generarlo'
 
     return { mes, inicial, cobro, estado, titulo, esActual: mes === mesActual }

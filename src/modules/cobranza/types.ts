@@ -1,5 +1,5 @@
 import type { Timestamp } from 'firebase/firestore'
-import { fechaISO } from '@/lib/formato'
+import { fechaISO, mesCicloActual } from '@/lib/formato'
 
 export const ESTADOS_PAGO = ['pendiente', 'enviado', 'pagado'] as const
 export type EstadoPago = (typeof ESTADOS_PAGO)[number]
@@ -36,9 +36,15 @@ export interface Cobro {
   cotizacion_id: string
   cotizacion_numero: number | null
   suscripcion_id: string
-  mes_ciclo: string // 'YYYY-MM' para cobros de suscripción
+  // 'YYYY-MM' mes al que pertenece el cobro (filtro de Cobranza). En los de
+  // suscripción es además el mes de la grilla. Docs antiguos pueden tenerlo ''.
+  mes_ciclo: string
   concepto: string
   monto: number
+  // 'YYYY-MM-DD' fecha del documento, editable (por defecto el día en que se
+  // crea). Va en el PDF. `creado_en` queda como registro del sistema.
+  // Docs antiguos no la tienen: ver fechaEmisionDe().
+  fecha_emision: string
   // 'YYYY-MM-DD' desde cuando corresponde enviar el cobro. '' = cobrar ya.
   // Docs anteriores al campo no lo tienen (undefined) y se tratan como ''.
   fecha_cobro: string
@@ -48,6 +54,9 @@ export interface Cobro {
   url_boleta: string
   notas: string
   historial: EventoCobro[]
+  // Cobro cargado a posteriori (meses previos al uso del sistema). No consume el
+  // correlativo: su `numero` es una serie propia y se muestra como 'P<n>'.
+  historico?: boolean
   creado_en: Timestamp | null
   actualizado_en: Timestamp | null
 }
@@ -68,9 +77,10 @@ export function cobroInputVacio(): CobroInput {
     cotizacion_id: '',
     cotizacion_numero: null,
     suscripcion_id: '',
-    mes_ciclo: '',
+    mes_ciclo: mesCicloActual(),
     concepto: '',
     monto: 0,
+    fecha_emision: fechaISO(),
     fecha_cobro: '',
     estado_pago: 'pendiente',
     estado_boleta: 'no_aplica',
@@ -88,4 +98,20 @@ export const LABEL_ESTADO_BOLETA: Record<EstadoBoleta, string> = {
 /** Pendiente con fecha de cobro futura: todavía no toca enviarlo. */
 export function esProgramado(c: Pick<Cobro, 'estado_pago' | 'fecha_cobro'>): boolean {
   return c.estado_pago === 'pendiente' && !!c.fecha_cobro && c.fecha_cobro > fechaISO()
+}
+
+/** Número visible del cobro: '12', o 'P3' si es histórico. */
+export function numeroCobro(c: Pick<Cobro, 'numero' | 'historico'>): string {
+  return c.historico ? `P${c.numero}` : String(c.numero)
+}
+
+/** Fecha de emisión; para docs sin el campo, el día en que se creó. */
+export function fechaEmisionDe(c: Pick<Cobro, 'fecha_emision' | 'creado_en'>): string {
+  if (c.fecha_emision) return c.fecha_emision
+  return c.creado_en ? fechaISO(c.creado_en.toDate()) : ''
+}
+
+/** Mes 'YYYY-MM' del cobro; para docs antiguos sin mes, el de la fecha de emisión. */
+export function mesDeCobro(c: Pick<Cobro, 'mes_ciclo' | 'fecha_emision' | 'creado_en'>): string {
+  return c.mes_ciclo || fechaEmisionDe(c).slice(0, 7)
 }
