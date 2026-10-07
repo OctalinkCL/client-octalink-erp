@@ -31,6 +31,7 @@ import {
   numeroCobro,
   type Cobro,
   type EstadoPago,
+  type FiltroPago,
 } from './types'
 
 const router = useRouter()
@@ -62,7 +63,7 @@ function verDetalle(c: Cobro) {
 }
 
 function onFiltroPago(valor: unknown) {
-  filtroPago.value = String(valor) as EstadoPago | 'todos'
+  filtroPago.value = String(valor) as FiltroPago
 }
 
 async function onPago(c: Cobro, valor: unknown) {
@@ -120,6 +121,7 @@ async function borrar(c: Cobro) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="por_cobrar">Por cobrar</SelectItem>
           <SelectItem value="todos">Todos</SelectItem>
           <SelectItem v-for="e in ESTADOS_PAGO" :key="e" :value="e" class="capitalize">
             {{ e }}

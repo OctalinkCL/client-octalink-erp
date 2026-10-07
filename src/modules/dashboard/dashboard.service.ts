@@ -1,5 +1,6 @@
 import { Timestamp, collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { mesCicloActual, mesCicloAnterior } from '@/lib/formato'
 import type { Cobro } from '@/modules/cobranza/types'
 import type { Cotizacion } from '@/modules/cotizaciones/types'
 import type { Ot } from '@/modules/ots/types'
@@ -11,7 +12,10 @@ const cotizacionesCol = collection(db, 'cotizaciones')
 const suscripcionesCol = collection(db, 'suscripciones')
 
 export interface DatosDashboard {
-  /** Unión sin duplicados: cobros abiertos + boleta pendiente + pagados este mes. */
+  /**
+   * Unión sin duplicados: cobros abiertos + boleta pendiente + pagados este mes
+   * + los de los ciclos actual y anterior (para saber qué suscripciones ya tienen cobro).
+   */
   cobros: Cobro[]
   otsCompletadas: Ot[]
   /** Cotizaciones pendientes + aceptadas. */
@@ -32,17 +36,18 @@ function inicioDeMes(): Date {
 export async function cargarDatosDashboard(): Promise<DatosDashboard> {
   const desde = Timestamp.fromDate(inicioDeMes())
 
-  const [abiertos, boletaPend, pagadosMes, ots, cots, subs] = await Promise.all([
+  const [abiertos, boletaPend, pagadosMes, ciclos, ots, cots, subs] = await Promise.all([
     getDocs(query(cobrosCol, where('estado_pago', 'in', ['pendiente', 'enviado']))),
     getDocs(query(cobrosCol, where('estado_boleta', '==', 'pendiente'))),
     getDocs(query(cobrosCol, where('fecha_pago', '>=', desde))),
+    getDocs(query(cobrosCol, where('mes_ciclo', 'in', [mesCicloAnterior(), mesCicloActual()]))),
     getDocs(query(otsCol, where('estado', '==', 'completada'))),
     getDocs(query(cotizacionesCol, where('estado', 'in', ['pendiente', 'aceptada']))),
     getDocs(query(suscripcionesCol, where('estado', '==', 'activa'))),
   ])
 
   const cobrosMap = new Map<string, Cobro>()
-  for (const snap of [abiertos, boletaPend, pagadosMes]) {
+  for (const snap of [abiertos, boletaPend, pagadosMes, ciclos]) {
     for (const d of snap.docs) cobrosMap.set(d.id, { id: d.id, ...d.data() } as Cobro)
   }
 

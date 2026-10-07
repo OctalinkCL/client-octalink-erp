@@ -169,7 +169,7 @@ async function borrar(s: Suscripcion) {
             </Select>
           </TableCell>
           <TableCell>
-            <GrillaMeses :anio="anio" :mes-inicio="mesInicioDe(s)" :cobros="porSuscripcion.get(s.id)"
+            <GrillaMeses :anio="anio" :mes-inicio="mesInicioDe(s)" :dia-cobro="s.dia_cobro" :cobros="porSuscripcion.get(s.id)"
               :generando="mesGenerando(s)" @abrir="abrirCobro" @generar="(mes) => generarCobroMes(s, mes)" />
           </TableCell>
           <TableCell class="whitespace-nowrap text-right">

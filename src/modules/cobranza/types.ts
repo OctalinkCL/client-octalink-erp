@@ -4,6 +4,9 @@ import { fechaISO, mesCicloActual } from '@/lib/formato'
 export const ESTADOS_PAGO = ['pendiente', 'enviado', 'pagado'] as const
 export type EstadoPago = (typeof ESTADOS_PAGO)[number]
 
+/** Filtro de la lista de Cobranza. 'por_cobrar' = pendiente + enviado. */
+export type FiltroPago = EstadoPago | 'todos' | 'por_cobrar'
+
 export const ESTADOS_BOLETA = ['no_aplica', 'pendiente', 'enviada'] as const
 export type EstadoBoleta = (typeof ESTADOS_BOLETA)[number]
 

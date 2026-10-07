@@ -18,6 +18,11 @@ export function mesCicloActual(fecha = new Date()): string {
   return `${fecha.getFullYear()}-${pad2(fecha.getMonth() + 1)}`
 }
 
+/** Mes de ciclo 'YYYY-MM' anterior al de una fecha (por defecto, hoy). */
+export function mesCicloAnterior(fecha = new Date()): string {
+  return mesCicloActual(new Date(fecha.getFullYear(), fecha.getMonth() - 1, 1))
+}
+
 /** '2026-09' → 'Septiembre 2026'. */
 export function mesCicloLegible(mesCiclo: string): string {
   const [y, m] = mesCiclo.split('-').map(Number)

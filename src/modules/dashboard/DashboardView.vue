@@ -8,7 +8,6 @@ const {
   loading,
   error,
   procesando,
-  mesActual,
   cargar,
   suscripcionesSinCobro,
   otsSinCobro,
@@ -68,20 +67,21 @@ const {
     </p>
 
     <template v-else>
-      <!-- 1. Suscripciones sin cobro del mes -->
+      <!-- 1. Suscripciones sin cobro del ciclo vigente -->
       <section v-if="suscripcionesSinCobro.length" class="rounded-lg border">
         <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Suscripciones sin cobro de {{ mesCicloLegible(mesActual) }}
-          ({{ suscripcionesSinCobro.length }})
+          Suscripciones sin cobro generado ({{ suscripcionesSinCobro.length }})
         </header>
         <ul class="divide-y">
-          <li v-for="s in suscripcionesSinCobro" :key="s.id"
+          <li v-for="{ suscripcion: s, mesCiclo } in suscripcionesSinCobro" :key="s.id"
             class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
             <span>
               {{ s.cliente_nombre }} — {{ s.descripcion }}
-              <span class="text-muted-foreground">· {{ formatoCLP(s.monto) }}</span>
+              <span class="text-muted-foreground">
+                · {{ mesCicloLegible(mesCiclo) }} · {{ formatoCLP(s.monto) }}
+              </span>
             </span>
-            <Button size="sm" :disabled="procesando === `sus-${s.id}`" @click="generarCobroDeSuscripcion(s)">
+            <Button size="sm" :disabled="procesando === `sus-${s.id}`" @click="generarCobroDeSuscripcion(s, mesCiclo)">
               {{ procesando === `sus-${s.id}` ? 'Generando…' : 'Generar cobro' }}
             </Button>
           </li>
@@ -144,10 +144,10 @@ const {
         </ul>
       </section>
 
-      <!-- 5. Por cobrar -->
+      <!-- 5. Pendientes -->
       <section v-if="cobrosPorCobrar.length" class="rounded-lg border">
         <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Por cobrar ({{ cobrosPorCobrar.length }})
+          Pendientes ({{ cobrosPorCobrar.length }})
         </header>
         <ul class="divide-y">
           <li v-for="c in cobrosPorCobrar" :key="c.id"
