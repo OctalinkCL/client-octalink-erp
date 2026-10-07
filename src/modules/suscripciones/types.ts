@@ -1,5 +1,5 @@
 import type { Timestamp } from 'firebase/firestore'
-import { mesCicloActual } from '@/lib/formato'
+import { mesCicloActual, mesCicloAnterior } from '@/lib/formato'
 
 export const ESTADOS_SUSCRIPCION = ['activa', 'pausada'] as const
 export type EstadoSuscripcion = (typeof ESTADOS_SUSCRIPCION)[number]
@@ -53,6 +53,19 @@ export function suscripcionInputVacio(): SuscripcionInput {
 export function mesInicioDe(s: Pick<Suscripcion, 'mes_inicio' | 'creado_en'>): string {
   if (s.mes_inicio) return s.mes_inicio
   return s.creado_en ? mesCicloActual(s.creado_en.toDate()) : ''
+}
+
+/**
+ * Mes de ciclo 'YYYY-MM' que corresponde tener cobrado hoy: el mes actual si ya
+ * llegó el día de cobro, si no el anterior. '' si la suscripción aún no parte.
+ */
+export function cicloVigenteDe(
+  s: Pick<Suscripcion, 'dia_cobro' | 'mes_inicio' | 'creado_en'>,
+  hoy = new Date(),
+): string {
+  const ciclo =
+    hoy.getDate() >= (s.dia_cobro || 1) ? mesCicloActual(hoy) : mesCicloAnterior(hoy)
+  return ciclo >= mesInicioDe(s) ? ciclo : ''
 }
 
 /** Colores de badge por estado. */

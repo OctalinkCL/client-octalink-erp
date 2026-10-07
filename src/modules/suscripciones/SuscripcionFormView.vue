@@ -370,7 +370,7 @@ async function guardar() {
 
         <div v-if="esEdicion && original" class="grid gap-3">
           <h2 class="text-sm font-semibold">Pagos {{ anio }}</h2>
-          <GrillaMeses :anio="anio" :mes-inicio="form.mes_inicio" :cobros="porSuscripcion.get(original.id)"
+          <GrillaMeses :anio="anio" :mes-inicio="form.mes_inicio" :dia-cobro="form.dia_cobro" :cobros="porSuscripcion.get(original.id)"
             :generando="generandoMes" @abrir="abrirCobro" @generar="generarMes" />
         </div>
       </aside>

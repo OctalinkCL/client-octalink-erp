@@ -3,7 +3,7 @@ import { mesCicloActual } from '@/lib/formato'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { Ot } from '@/modules/ots/types'
 import type { Suscripcion } from '@/modules/suscripciones/types'
-import { mesDeCobro, type Cobro, type CobroInput, type EstadoBoleta, type EstadoPago } from './types'
+import { mesDeCobro, type Cobro, type CobroInput, type EstadoBoleta, type EstadoPago, type FiltroPago } from './types'
 import {
   actualizarCobro,
   cambiarEstadoBoleta,
@@ -22,9 +22,10 @@ const KEY = ['cobros'] as const
 export function useCobranza() {
   const qc = useQueryClient()
   const busqueda = ref('')
-  const filtroPago = ref<EstadoPago | 'todos'>('todos')
-  // 'YYYY-MM' o 'todos'. Parte siempre en el mes actual.
-  const filtroMes = ref<string>(mesCicloActual())
+  // Parte en lo abierto de cualquier mes: el filtro de mes es para el historial.
+  const filtroPago = ref<FiltroPago>('por_cobrar')
+  // 'YYYY-MM' o 'todos'.
+  const filtroMes = ref<string>('todos')
 
   // Un cambio en cobros afecta también ots (flag cobro_generado), el mapa de
   // cobros del mes de suscripciones, y el dashboard.
@@ -53,7 +54,9 @@ export function useCobranza() {
     if (filtroMes.value !== 'todos') {
       lista = lista.filter((c) => mesDeCobro(c) === filtroMes.value)
     }
-    if (filtroPago.value !== 'todos') {
+    if (filtroPago.value === 'por_cobrar') {
+      lista = lista.filter((c) => c.estado_pago !== 'pagado')
+    } else if (filtroPago.value !== 'todos') {
       lista = lista.filter((c) => c.estado_pago === filtroPago.value)
     }
     const q = busqueda.value.trim().toLowerCase()

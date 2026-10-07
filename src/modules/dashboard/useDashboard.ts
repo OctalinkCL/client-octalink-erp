@@ -1,12 +1,11 @@
 import { computed, ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { mesCicloActual } from '@/lib/formato'
 import { crearCobroDesdeOt, crearCobroDesdeSuscripcion } from '@/modules/cobranza/cobranza.service'
 import { crearOtDesdeCotizacion } from '@/modules/ots/ots.service'
 import { esProgramado, type Cobro } from '@/modules/cobranza/types'
 import type { Cotizacion } from '@/modules/cotizaciones/types'
 import type { Ot } from '@/modules/ots/types'
-import type { Suscripcion } from '@/modules/suscripciones/types'
+import { cicloVigenteDe, type Suscripcion } from '@/modules/suscripciones/types'
 import { cargarDatosDashboard } from './dashboard.service'
 
 function esDelMesActual(ts: Cobro['fecha_pago']): boolean {
@@ -23,7 +22,6 @@ function esDelMesActual(ts: Cobro['fecha_pago']): boolean {
  */
 export function useDashboard() {
   const qc = useQueryClient()
-  const mesActual = mesCicloActual()
   const procesando = ref('')
 
   const query = useQuery({ queryKey: ['dashboard'], queryFn: cargarDatosDashboard })
@@ -38,13 +36,16 @@ export function useDashboard() {
 
   // --- Bandeja de tareas ---
 
+  // El ciclo exigible depende del día de cobro de cada suscripción: antes de ese
+  // día se revisa el mes anterior, así un mes sin generar no deja de avisar.
   const suscripcionesSinCobro = computed(() =>
-    suscripcionesActivas.value.filter(
-      (s) =>
-        !cobros.value.some(
-          (c) => c.suscripcion_id === s.id && c.mes_ciclo === mesActual,
-        ),
-    ),
+    suscripcionesActivas.value
+      .map((s) => ({ suscripcion: s, mesCiclo: cicloVigenteDe(s) }))
+      .filter(
+        ({ suscripcion: s, mesCiclo }) =>
+          mesCiclo &&
+          !cobros.value.some((c) => c.suscripcion_id === s.id && c.mes_ciclo === mesCiclo),
+      ),
   )
 
   const otsSinCobro = computed(() =>
@@ -116,8 +117,8 @@ export function useDashboard() {
     }
   }
 
-  const generarCobroDeSuscripcion = (s: Suscripcion) =>
-    correr(`sus-${s.id}`, () => crearCobroDesdeSuscripcion(s, mesActual), ['cobros', 'cobros-mes'])
+  const generarCobroDeSuscripcion = (s: Suscripcion, mesCiclo: string) =>
+    correr(`sus-${s.id}`, () => crearCobroDesdeSuscripcion(s, mesCiclo), ['cobros', 'cobros-mes'])
 
   const generarCobroDeOt = (o: Ot) =>
     correr(`ot-${o.id}`, () => crearCobroDesdeOt(o), ['cobros', 'ots'])
@@ -129,7 +130,6 @@ export function useDashboard() {
     loading,
     error,
     procesando,
-    mesActual,
     cargar: () => query.refetch(),
     suscripcionesSinCobro,
     otsSinCobro,
