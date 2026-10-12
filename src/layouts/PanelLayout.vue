@@ -6,7 +6,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
 
 <template>
   <SidebarProvider>
-    <AppSidebar variant="inset" />
+    <AppSidebar collapsible="icon" />
     <SidebarInset
       class="bg-transparent  md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none md:peer-data-[variant=inset]:mt-0">
       <header class=" flex h-14 items-center gap-2 px-4 sticky top-0 border-b md:border-0">

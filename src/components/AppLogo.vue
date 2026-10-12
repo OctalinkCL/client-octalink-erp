@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import Logo from '@/components/Logo.vue'
+import { PanelLeftIcon } from '@lucide/vue'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 </script>
 
 <template>
-  <RouterLink to="/" class="flex items-center px-2 py-1.5">
-    <Logo :width="130" />
-  </RouterLink>
+  <div
+    class="flex items-center justify-between gap-0.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-2">
+
+    <RouterLink to="/">
+      ds
+    </RouterLink>
+    <SidebarTrigger>
+      <PanelLeftIcon />
+    </SidebarTrigger>
+  </div>
 </template>

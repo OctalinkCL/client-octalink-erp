@@ -27,13 +27,17 @@ async function handleLogout() {
 </script>
 
 <template>
-  <Sidebar v-bind="props">
-    <SidebarHeader>
+  <!-- todo: delete width in production -->
+  <Sidebar v-bind="props" class="lg:w-63">
+    <!-- top -->
+    <SidebarHeader class="pb-1">
       <AppLogo />
     </SidebarHeader>
+    <!-- middle -->
     <SidebarContent>
       <AppNav />
     </SidebarContent>
+    <!-- footer -->
     <SidebarFooter>
       <SidebarMenu>
         <SidebarMenuItem>
