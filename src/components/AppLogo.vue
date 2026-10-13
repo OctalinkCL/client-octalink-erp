@@ -20,7 +20,7 @@ import { AsteriskIcon } from "@lucide/vue";
       >
     </RouterLink>
     <SidebarTrigger>
-      <PanelLeftIcon class="size-3.75" stroke-width="1.5" />
+      <PanelLeftIcon class="size-3.75 opacity-70" stroke-width="1.5" />
     </SidebarTrigger>
   </div>
 </template>
