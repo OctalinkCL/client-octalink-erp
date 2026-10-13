@@ -94,7 +94,7 @@ body {
   --card-foreground: #1d1c1a;
   --popover: oklch(1 0 0);
   --popover-foreground: #1d1c1a;
-  --primary: oklch(0.205 0 0);
+  --primary: #b93d68; /* oklch(0.205 0 0)*/
   --primary-foreground: oklch(0.985 0 0);
   --secondary: #eeede9;
   --secondary-foreground: #1d1c1a;
@@ -117,7 +117,9 @@ body {
   --input: var(--border-strong);
   --elev-sm: 0 1px 2px rgba(28, 25, 20, 0.05);
   --elev-card: 0 1px 2px rgba(28, 25, 20, 0.04), 0 0 0 1px var(--border);
-  --elev-float: 0 12px 32px -8px rgba(28, 25, 20, 0.16), 0 2px 6px -2px rgba(28, 25, 20, 0.06);
+  --elev-float:
+    0 12px 32px -8px rgba(28, 25, 20, 0.16),
+    0 2px 6px -2px rgba(28, 25, 20, 0.06);
   --elev-pop: var(--elev-float), 0 0 0 1px var(--border);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);

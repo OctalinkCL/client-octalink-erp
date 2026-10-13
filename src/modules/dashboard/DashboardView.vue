@@ -5,8 +5,11 @@ import {
   CalendarClockIcon,
   CircleCheckIcon,
   FileTextIcon,
+  FolderPlusIcon,
+  PlusIcon,
   RefreshCwIcon,
   RepeatIcon,
+  UserPlusIcon,
   WalletIcon,
 } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
@@ -75,51 +78,62 @@ const listasDeCobros = computed(() =>
           {{ fechaHoy }} • Here's what's happening across your workspace.
         </p>
       </div>
-      <Button :disabled="loading" @click="cargar">
-        <RefreshCwIcon :class="{ 'animate-spin': loading }" />
-        {{ loading ? "Actualizando…" : "Actualizar" }}
-      </Button>
+      <div class="flex shrink-0 gap-1.5">
+        <Button :disabled="loading" 2@click="cargar">
+          <RefreshCwIcon :class="{ 'animate-spin': loading }" />
+          {{ loading ? "Actualizando…" : "Actualizar" }}
+        </Button>
+      </div>
     </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
     <!-- Resumen -->
     <div
-      class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-sidebar-border bg-sidebar-border lg:grid-cols-4"
+      class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-sidebar-border bg-sidebar-border lg:grid-cols-4 mb-4"
     >
-      <div class="flex flex-col gap-2 bg-background p-5">
-        <p class="flex items-center gap-2 text-sm text-muted-foreground">
-          <WalletIcon class="size-4" /> Por cobrar
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <WalletIcon class="size-3.5" /> Por cobrar
         </p>
         <p class="text-2xl font-semibold tabular-nums">
           {{ formatoCLP(resumen.porCobrar) }}
         </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground">
+          Text placeholder
+        </p>
       </div>
-      <div class="flex flex-col gap-2 bg-background p-5">
-        <p class="flex items-center gap-2 text-sm text-muted-foreground">
-          <CircleCheckIcon class="size-4" /> Cobrado este mes
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <CircleCheckIcon class="size-3.5" /> Cobrado este mes
         </p>
         <p class="text-2xl font-semibold tabular-nums">
           {{ formatoCLP(resumen.cobradoMes) }}
         </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground">
+          Text placeholder
+        </p>
       </div>
-      <div class="flex flex-col gap-2 bg-background p-5">
-        <p class="flex items-center gap-2 text-sm text-muted-foreground">
-          <RepeatIcon class="size-4" /> Suscripciones activas
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <RepeatIcon class="size-3.5" /> Suscripciones activas
         </p>
         <p class="text-2xl font-semibold tabular-nums">
           {{ resumen.suscripcionesActivas }}
         </p>
-        <p class="text-sm text-muted-foreground tabular-nums">
+        <p class="text-[11.5px] leading-4 text-muted-foreground tabular-nums">
           {{ formatoCLP(resumen.mrr) }}/mes
         </p>
       </div>
-      <div class="flex flex-col gap-2 bg-background p-5">
-        <p class="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileTextIcon class="size-4" /> Cotizaciones pendientes
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <FileTextIcon class="size-3.5" /> Cotizaciones pendientes
         </p>
         <p class="text-2xl font-semibold tabular-nums">
           {{ resumen.cotizacionesPendientes }}
+        </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground">
+          Text placeholder
         </p>
       </div>
     </div>
