@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:ital,wght@0,100..900;1,100..900&display=swap");
 
 @import "tailwindcss";
@@ -19,6 +19,9 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-icon: var(--sidebar-icon);
+  --color-sidebar-active: var(--sidebar-active);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -79,13 +82,18 @@ body {
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(96.6% 0.005 106.5); /* oklch(0.985 0 0) */
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-foreground: #1d1c1a;
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-accent: #eeede9; /* hover del item */
+  --sidebar-accent-foreground: #1d1c1a;
+  --sidebar-border: #e9e7e2;
   --sidebar-ring: oklch(0.708 0 0);
+  /* menú lateral: item en reposo, ícono, item activo */
+  --sidebar-muted-foreground: #57544e;
+  --sidebar-icon: #8c8880;
+  --sidebar-active: #ffffff;
+  --sidebar-active-shadow: 0 1px 2px #0000000d, 0 0 0 1px var(--sidebar-border);
 }
 
 .dark {
@@ -113,13 +121,17 @@ body {
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --sidebar: #151514;
-  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-foreground: #eceae5;
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-accent: #2d2d2b;
+  --sidebar-accent-foreground: #eceae5;
+  --sidebar-border: #2c2b29;
   --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-muted-foreground: #b5b2ab;
+  --sidebar-icon: #6f6c66;
+  --sidebar-active: #2d2d2b;
+  --sidebar-active-shadow: none;
 }
 
 @layer base {

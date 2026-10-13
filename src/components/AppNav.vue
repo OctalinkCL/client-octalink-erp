@@ -39,11 +39,11 @@ const items = [
 <template>
   <SidebarGroup class="pt-1">
     <SidebarGroupContent>
-      <SidebarMenu class="gap-1">
+      <SidebarMenu class="gap-px">
         <SidebarMenuItem v-for="item in items" :key="item.to">
           <SidebarMenuButton
             as-child
-            class="h-7.5 rounded"
+            class="h-7.5 gap-2.25 rounded-sm px-2 font-[450] text-sidebar-muted-foreground data-active:bg-sidebar-active data-active:shadow-(--sidebar-active-shadow)"
             :is-active="
               item.to === '/'
                 ? route.path === '/'
@@ -51,8 +51,12 @@ const items = [
             "
           >
             <RouterLink :to="item.to" v-foley="'tick'" @click="handleNavigate">
-              <component :is="item.icon" class="opacity-60" />
-              <span class="text-[13.5px] font-medium pl-0.5">{{
+              <component
+                :is="item.icon"
+                stroke-width="1.75"
+                class="text-sidebar-icon group-hover/menu-button:text-sidebar-muted-foreground group-data-active/menu-button:text-sidebar-muted-foreground"
+              />
+              <span class="flex-1 truncate text-[13.5px]">{{
                 item.label
               }}</span>
             </RouterLink>
