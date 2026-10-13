@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PencilIcon, PlusIcon, Trash2Icon } from '@lucide/vue'
 import Loading from '@/components/Loading.vue'
+import { useBreadcrumb } from '@/composables/useBreadcrumb'
 import { useModoFicha } from '@/composables/useModoFicha'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,11 @@ const error = ref('')
 // Cotización tal como está guardada: la OT se genera a partir de ella.
 const original = ref<Cotizacion | null>(null)
 const numero = ref<number | null>(null)
+
+const titulo = computed(() =>
+  esEdicion.value && numero.value ? `Cotización N°${numero.value}` : 'Nueva cotización',
+)
+useBreadcrumb(() => (cargando.value ? '' : titulo.value))
 const otGenerada = ref(false)
 const fecha = ref('') // legible, solo en edición
 
@@ -225,7 +231,7 @@ async function guardar() {
         <Button variant="outline" size="sm" class="mt-1" @click="volver">← Volver</Button>
         <div>
           <h1 class="text-2xl font-semibold">
-            {{ esEdicion && numero ? `Cotización N°${numero}` : 'Nueva cotización' }}
+            {{ titulo }}
           </h1>
           <p class="text-sm text-muted-foreground">
             {{ form.cliente_nombre || 'Sin cliente' }}<template v-if="fecha"> · {{ fecha }}</template>
