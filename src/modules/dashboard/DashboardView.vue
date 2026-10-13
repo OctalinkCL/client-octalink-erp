@@ -63,20 +63,19 @@ const listasDeCobros = computed(() =>
 
 <template>
   <div class="mx-5 px-6 pt-7 max-w-290">
-    <div class="flex items-center justify-between gap-4">
+    <!-- header -->
+    <div class="flex items-start justify-between gap-4 mb-5">
       <div class="flex flex-col gap-1">
         <h1
           class="text-2xl font-semibold tracking-tight text-sidebar-foreground"
         >
           Good morning, Tanjim
         </h1>
-        <p
-          class="text-[15px] text-sidebar-muted-foreground first-letter:uppercase"
-        >
-          {{ fechaHoy }}
+        <p class="text-sm text-foreground-soft capitalize">
+          {{ fechaHoy }} • Here's what's happening across your workspace.
         </p>
       </div>
-      <Button variant="outline" size="sm" :disabled="loading" @click="cargar">
+      <Button :disabled="loading" @click="cargar">
         <RefreshCwIcon :class="{ 'animate-spin': loading }" />
         {{ loading ? "Actualizando…" : "Actualizar" }}
       </Button>
