@@ -17,7 +17,7 @@ import {
   MonitorIcon,
   MoonIcon,
   SunIcon,
-  UserIcon,
+  SettingsIcon,
 } from "@lucide/vue";
 import UserAvatar from "@/components/UserAvatar.vue";
 import { useUsuario } from "@/composables/useUsuario";
@@ -82,9 +82,12 @@ async function handleLogout() {
 
         <DropdownMenuSeparator :class="claseSeparador" />
 
-        <DropdownMenuItem :class="claseItem">
-          <UserIcon />
-          Ver perfil
+        <DropdownMenuItem
+          :class="claseItem"
+          @select="router.push({ name: 'configuracion' })"
+        >
+          <SettingsIcon />
+          Configuración
         </DropdownMenuItem>
 
         <DropdownMenuSeparator :class="claseSeparador" />

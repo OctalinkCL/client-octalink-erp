@@ -37,10 +37,14 @@ const { nombre } = useUsuario();
       <SidebarMenu>
         <SidebarMenuItem>
           <UserMenu>
-            <SidebarMenuButton size="lg">
-              <UserAvatar />
+            <SidebarMenuButton
+              class="h-9 gap-2.25 rounded-sm px-2 text-[13.5px] group-data-[collapsible=icon]:p-[5px]!"
+            >
+              <UserAvatar class="size-5.5 text-[9px] font-semibold" />
               <span class="flex-1 truncate font-medium">{{ nombre }}</span>
-              <ChevronsUpDownIcon class="ml-auto opacity-60" />
+              <ChevronsUpDownIcon
+                class="ml-auto size-3.25! text-muted-foreground"
+              />
             </SidebarMenuButton>
           </UserMenu>
         </SidebarMenuItem>

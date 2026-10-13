@@ -11,6 +11,7 @@ import {
 import { secciones } from "@/router/secciones";
 
 const route = useRoute();
+const seccionesSidebar = secciones.filter((s) => !s.fueraDelSidebar);
 const { isMobile, setOpenMobile } = useSidebar();
 
 function handleNavigate() {
@@ -22,7 +23,7 @@ function handleNavigate() {
   <SidebarGroup class="pt-1">
     <SidebarGroupContent>
       <SidebarMenu class="gap-px">
-        <SidebarMenuItem v-for="item in secciones" :key="item.to">
+        <SidebarMenuItem v-for="item in seccionesSidebar" :key="item.to">
           <SidebarMenuButton
             as-child
             class="h-7.5 gap-2.25 rounded-sm px-2 font-[450] text-sidebar-muted-foreground data-active:bg-sidebar-active data-active:shadow-(--sidebar-active-shadow)"
