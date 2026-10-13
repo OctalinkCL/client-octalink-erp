@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { FileTextIcon, PencilIcon, SendIcon } from '@lucide/vue'
 import Loading from '@/components/Loading.vue'
+import { useBreadcrumb } from '@/composables/useBreadcrumb'
 import { useModoFicha } from '@/composables/useModoFicha'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -61,6 +62,11 @@ const fechaPago = ref('') // 'YYYY-MM-DD'
 const historial = ref<EventoCobro[]>([])
 const numero = ref('') // visible: '14' o 'P3'
 const cargando = ref(false)
+
+const titulo = computed(() =>
+  esEdicion.value ? `Cobro N°${numero.value}` : 'Nuevo cobro directo',
+)
+useBreadcrumb(() => (cargando.value ? '' : titulo.value))
 const guardando = ref(false)
 const guardandoEstado = ref(false)
 const enviando = ref(false)
@@ -317,14 +323,14 @@ async function enviarCorreo() {
 </script>
 
 <template>
-  <div class="flex max-w-5xl flex-col gap-6">
+  <div class="mx-5 px-6 pt-7 pb-10 box-content flex max-w-5xl flex-col gap-6">
     <!-- Encabezado: qué cobro es, de dónde viene y acciones -->
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <Button variant="outline" size="sm" class="mt-1" @click="volver">← Volver</Button>
         <div>
-          <h1 class="text-2xl font-semibold">
-            {{ esEdicion ? `Cobro N°${numero}` : 'Nuevo cobro directo' }}
+          <h1 class="text-2xl font-semibold tracking-tight">
+            {{ titulo }}
           </h1>
           <p class="text-sm text-muted-foreground">
             {{ origenTexto }}<template v-if="form.cliente_nombre"> · {{ form.cliente_nombre }}</template>

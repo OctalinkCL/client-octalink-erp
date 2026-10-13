@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocalStorage, useMediaQuery } from '@vueuse/core'
-import { KanbanIcon, ListIcon } from '@lucide/vue'
+import { KanbanIcon, ListIcon, PlusIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -79,10 +79,13 @@ async function generarCobro(o: Ot) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="mx-5 px-6 pt-7 pb-10 flex max-w-290 flex-col gap-4">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-semibold">Órdenes de trabajo</h1>
-      <Button @click="router.push({ name: 'ot-nueva' })">Nueva OT</Button>
+      <h1 class="text-2xl font-semibold tracking-tight">Órdenes de trabajo</h1>
+      <Button @click="router.push({ name: 'ot-nueva' })">
+        <PlusIcon />
+        Nueva OT
+      </Button>
     </div>
 
     <div class="flex items-center justify-between gap-4">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { PlusIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -68,10 +69,13 @@ async function generarOt(c: Cotizacion) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="mx-5 px-6 pt-7 pb-10 flex max-w-290 flex-col gap-4">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-semibold">Cotizaciones</h1>
-      <Button @click="router.push({ name: 'cotizacion-nueva' })">Nueva cotización</Button>
+      <h1 class="text-2xl font-semibold tracking-tight">Cotizaciones</h1>
+      <Button @click="router.push({ name: 'cotizacion-nueva' })">
+        <PlusIcon />
+        Nueva cotización
+      </Button>
     </div>
 
     <Input
