@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronLeftIcon, ChevronRightIcon } from '@lucide/vue'
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -100,10 +100,13 @@ async function borrar(s: Suscripcion) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="mx-5 px-6 pt-7 pb-10 flex max-w-290 flex-col gap-4">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-semibold">Suscripciones</h1>
-      <Button @click="router.push({ name: 'suscripcion-nueva' })">Nueva suscripción</Button>
+      <h1 class="text-2xl font-semibold tracking-tight">Suscripciones</h1>
+      <Button @click="router.push({ name: 'suscripcion-nueva' })">
+        <PlusIcon />
+        Nueva suscripción
+      </Button>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3">

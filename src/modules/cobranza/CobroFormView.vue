@@ -323,13 +323,13 @@ async function enviarCorreo() {
 </script>
 
 <template>
-  <div class="flex max-w-5xl flex-col gap-6">
+  <div class="mx-5 px-6 pt-7 pb-10 box-content flex max-w-5xl flex-col gap-6">
     <!-- Encabezado: qué cobro es, de dónde viene y acciones -->
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <Button variant="outline" size="sm" class="mt-1" @click="volver">← Volver</Button>
         <div>
-          <h1 class="text-2xl font-semibold">
+          <h1 class="text-2xl font-semibold tracking-tight">
             {{ titulo }}
           </h1>
           <p class="text-sm text-muted-foreground">

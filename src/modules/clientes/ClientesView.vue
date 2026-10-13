@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { PlusIcon } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -60,10 +61,13 @@ async function borrar(cliente: Cliente) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="mx-5 px-6 pt-7 pb-10 flex max-w-290 flex-col gap-4">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-semibold">Clientes</h1>
-      <Button @click="nuevo">Nuevo cliente</Button>
+      <h1 class="text-2xl font-semibold tracking-tight">Clientes</h1>
+      <Button @click="nuevo">
+        <PlusIcon />
+        Nuevo cliente
+      </Button>
     </div>
 
     <Input v-model="busqueda" placeholder="Buscar por nombre, RUT, email o contacto…" class="max-w-sm" />

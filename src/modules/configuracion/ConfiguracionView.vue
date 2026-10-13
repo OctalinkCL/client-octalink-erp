@@ -56,8 +56,8 @@ onMounted(cargar)
 </script>
 
 <template>
-  <div class="flex max-w-md flex-col gap-5">
-    <h1 class="text-2xl font-semibold">Configuración</h1>
+  <div class="mx-5 px-6 pt-7 pb-10 box-content flex max-w-md flex-col gap-5">
+    <h1 class="text-2xl font-semibold tracking-tight">Configuración</h1>
 
     <div class="grid gap-1.5">
       <Label>Sonido</Label>

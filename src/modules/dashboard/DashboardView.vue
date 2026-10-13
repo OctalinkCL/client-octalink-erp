@@ -5,15 +5,14 @@ import {
   CalendarClockIcon,
   CircleCheckIcon,
   FileTextIcon,
-  FolderPlusIcon,
-  PlusIcon,
   RefreshCwIcon,
   RepeatIcon,
-  UserPlusIcon,
   WalletIcon,
 } from "@lucide/vue";
 import { Button } from "@/components/ui/button";
 import { fechaCorta, formatoCLP, mesCicloLegible } from "@/lib/formato";
+import { useDetalleQuery } from "@/composables/useDetalleQuery";
+import CobroDetallePanel from "@/modules/cobranza/CobroDetallePanel.vue";
 import { useDashboard } from "./useDashboard";
 
 const {
@@ -41,6 +40,9 @@ const fechaHoy = new Intl.DateTimeFormat("es-CL", {
   day: "numeric",
   month: "long",
 }).format(new Date());
+
+// Detalle del cobro en panel lateral (?cobro=<id>), sin salir del dashboard.
+const { id: cobroAbierto, cerrar: cerrarCobro } = useDetalleQuery("cobro");
 
 // Las tres listas de cobros comparten fila: solo cambia el título.
 const listasDeCobros = computed(() =>
@@ -76,7 +78,7 @@ const listasDeCobros = computed(() =>
         </p>
       </div>
       <div class="flex shrink-0 gap-1.5">
-        <Button :disabled="loading" 2@click="cargar">
+        <Button :disabled="loading" @click="cargar">
           <RefreshCwIcon :class="{ 'animate-spin': loading }" />
           {{ loading ? "Actualizando…" : "Actualizar" }}
         </Button>
@@ -308,7 +310,7 @@ const listasDeCobros = computed(() =>
             <ul class="divide-y divide-sidebar-border">
               <li v-for="c in lista.cobros" :key="c.id">
                 <RouterLink
-                  :to="{ name: 'cobro-editar', params: { id: c.id } }"
+                  :to="{ query: { ...$route.query, cobro: c.id } }"
                   class="flex h-9.25 items-center gap-3 px-3.5 text-sm outline-none hover:bg-accent focus-visible:bg-accent"
                 >
                   <span class="min-w-0 flex-1 truncate font-medium">{{
@@ -363,5 +365,7 @@ const listasDeCobros = computed(() =>
         </ul>
       </section>
     </div>
+
+    <CobroDetallePanel :id="cobroAbierto" @cerrar="cerrarCobro" />
   </div>
 </template>
