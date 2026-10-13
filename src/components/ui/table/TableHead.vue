@@ -14,7 +14,7 @@ const variant = inject(TABLE_VARIANT_KEY, computed(() => 'default' as const))
 <template>
   <th data-slot="table-head"
     :class="cn(
-      'text-muted-foreground h-9 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+      'text-foreground-soft h-8.5 px-2 text-xs text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0',
       variant === 'border' && 'border-r last:border-r-0',
       props.class,
     )">
