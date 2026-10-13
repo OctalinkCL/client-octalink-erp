@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PencilIcon } from '@lucide/vue'
 import Loading from '@/components/Loading.vue'
+import { useBreadcrumb } from '@/composables/useBreadcrumb'
 import { useModoFicha } from '@/composables/useModoFicha'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -60,6 +61,11 @@ const { editando, empezarEdicion, cancelarEdicion: restaurarDatos } = useModoFic
 )
 // Suscripción tal como está guardada: la grilla genera cobros a partir de ella.
 const original = ref<Suscripcion | null>(null)
+
+const titulo = computed(() =>
+  esEdicion.value ? `Suscripción · ${form.cliente_nombre}` : 'Nueva suscripción',
+)
+useBreadcrumb(() => (cargando.value ? '' : titulo.value))
 
 // Pagos del año en curso (solo en edición).
 const anio = ref(new Date().getFullYear())
@@ -216,13 +222,13 @@ async function guardar() {
 </script>
 
 <template>
-  <div class="flex max-w-5xl flex-col gap-6">
+  <div class="mx-5 px-6 pt-7 pb-10 box-content flex max-w-5xl flex-col gap-6">
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <Button variant="outline" size="sm" class="mt-1" @click="volver">← Volver</Button>
         <div>
-          <h1 class="text-2xl font-semibold">
-            {{ esEdicion ? `Suscripción · ${form.cliente_nombre}` : 'Nueva suscripción' }}
+          <h1 class="text-2xl font-semibold tracking-tight">
+            {{ titulo }}
           </h1>
           <p class="text-sm text-muted-foreground">
             {{ form.descripcion || 'Cobro mensual recurrente' }}

@@ -62,7 +62,7 @@ function submit() {
         <DialogDescription>Datos de contacto y facturación.</DialogDescription>
       </DialogHeader>
 
-      <form class="grid gap-3" @submit.prevent="submit">
+      <form class="grid gap-4" @submit.prevent="submit">
         <div class="grid gap-1.5">
           <Label for="nombre">Nombre</Label>
           <Input id="nombre" v-model="form.nombre" required />
@@ -99,7 +99,7 @@ function submit() {
           <Textarea id="notas" v-model="form.notas" />
         </div>
 
-        <DialogFooter class="mt-2">
+        <DialogFooter>
           <Button type="button" variant="outline" :disabled="saving" @click="emit('update:open', false)">
             Cancelar
           </Button>

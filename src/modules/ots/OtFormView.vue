@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PencilIcon } from '@lucide/vue'
 import Loading from '@/components/Loading.vue'
+import { useBreadcrumb } from '@/composables/useBreadcrumb'
 import { useModoFicha } from '@/composables/useModoFicha'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -62,6 +63,11 @@ const { editando, empezarEdicion, cancelarEdicion: restaurarDatos } = useModoFic
 const error = ref('')
 // OT tal como está guardada: el cobro se genera a partir de ella.
 const original = ref<Ot | null>(null)
+
+const titulo = computed(() =>
+  esEdicion.value && original.value ? `OT N°${original.value.numero}` : 'Nueva OT',
+)
+useBreadcrumb(() => (cargando.value ? '' : titulo.value))
 const abriendoCobro = ref(false)
 
 const dialogClienteAbierto = ref(false)
@@ -229,13 +235,13 @@ async function guardar() {
 </script>
 
 <template>
-  <div class="flex max-w-5xl flex-col gap-6">
+  <div class="mx-5 px-6 pt-7 pb-10 box-content flex max-w-5xl flex-col gap-6">
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <Button variant="outline" size="sm" class="mt-1" @click="volver">← Volver</Button>
         <div>
-          <h1 class="text-2xl font-semibold">
-            {{ esEdicion && original ? `OT N°${original.numero}` : 'Nueva OT' }}
+          <h1 class="text-2xl font-semibold tracking-tight">
+            {{ titulo }}
           </h1>
           <p class="text-sm text-muted-foreground">
             {{ form.cliente_nombre || 'Sin cliente' }} ·

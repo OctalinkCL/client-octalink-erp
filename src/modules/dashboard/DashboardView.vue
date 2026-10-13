@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import { Button } from '@/components/ui/button'
-import { fechaCorta, formatoCLP, mesCicloLegible } from '@/lib/formato'
-import { useDashboard } from './useDashboard'
+import { computed } from "vue";
+import { RouterLink } from "vue-router";
+import {
+  CalendarClockIcon,
+  CircleCheckIcon,
+  FileTextIcon,
+  RefreshCwIcon,
+  RepeatIcon,
+  WalletIcon,
+} from "@lucide/vue";
+import { Button } from "@/components/ui/button";
+import { fechaCorta, formatoCLP, mesCicloLegible } from "@/lib/formato";
+import { useDetalleQuery } from "@/composables/useDetalleQuery";
+import CobroDetallePanel from "@/modules/cobranza/CobroDetallePanel.vue";
+import { useDashboard } from "./useDashboard";
 
 const {
   loading,
@@ -21,187 +32,340 @@ const {
   generarCobroDeSuscripcion,
   generarCobroDeOt,
   generarOtDeCotizacion,
-} = useDashboard()
+} = useDashboard();
+
+// 'martes, 13 de octubre'
+const fechaHoy = new Intl.DateTimeFormat("es-CL", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+}).format(new Date());
+
+// Detalle del cobro en panel lateral (?cobro=<id>), sin salir del dashboard.
+const { id: cobroAbierto, cerrar: cerrarCobro } = useDetalleQuery("cobro");
+
+// Las tres listas de cobros comparten fila: solo cambia el título.
+const listasDeCobros = computed(() =>
+  [
+    {
+      titulo: "Cobros por enviar",
+      cobros: cobrosPorEnviar.value,
+    },
+    {
+      titulo: "Pendientes",
+      cobros: cobrosPorCobrar.value,
+    },
+    {
+      titulo: "Boletas pendientes",
+      cobros: boletasPendientes.value,
+    },
+  ].filter((l) => l.cobros.length),
+);
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-semibold">Dashboard</h1>
-      <Button variant="outline" size="sm" :disabled="loading" @click="cargar">
-        {{ loading ? 'Actualizando…' : 'Actualizar' }}
-      </Button>
+  <div class="mx-5 px-6 pt-7 max-w-290">
+    <!-- header -->
+    <div class="flex items-start justify-between gap-4 mb-5">
+      <div class="flex flex-col gap-1">
+        <h1
+          class="text-2xl font-semibold tracking-tight text-sidebar-foreground"
+        >
+          Good morning, Tanjim
+        </h1>
+        <p class="text-sm text-foreground-soft capitalize">
+          {{ fechaHoy }} • Here's what's happening across your workspace.
+        </p>
+      </div>
+      <div class="flex shrink-0 gap-1.5">
+        <Button :disabled="loading" @click="cargar">
+          <RefreshCwIcon :class="{ 'animate-spin': loading }" />
+          {{ loading ? "Actualizando…" : "Actualizar" }}
+        </Button>
+      </div>
     </div>
 
     <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
     <!-- Resumen -->
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <div class="rounded-lg border p-3">
-        <p class="text-xs text-muted-foreground">Por cobrar</p>
-        <p class="text-lg font-medium font-mono">{{ formatoCLP(resumen.porCobrar) }}</p>
-      </div>
-      <div class="rounded-lg border p-3">
-        <p class="text-xs text-muted-foreground">Cobrado este mes</p>
-        <p class="text-lg font-medium font-mono">{{ formatoCLP(resumen.cobradoMes) }}</p>
-      </div>
-      <div class="rounded-lg border p-3">
-        <p class="text-xs text-muted-foreground">Suscripciones activas</p>
-        <p class="text-lg font-medium font-mono">
-          {{ resumen.suscripcionesActivas }}
-          <span class="text-sm font-normal text-muted-foreground">
-            · {{ formatoCLP(resumen.mrr) }}/mes
-          </span>
+    <div
+      class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-sidebar-border bg-sidebar-border lg:grid-cols-4 mb-4"
+    >
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <WalletIcon class="size-3.5" /> Por cobrar
+        </p>
+        <p class="text-2xl font-semibold tabular-nums">
+          {{ formatoCLP(resumen.porCobrar) }}
+        </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground">
+          Text placeholder
         </p>
       </div>
-      <div class="rounded-lg border p-3">
-        <p class="text-xs text-muted-foreground">Cotizaciones pendientes</p>
-        <p class="text-lg font-medium font-mono">{{ resumen.cotizacionesPendientes }}</p>
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <CircleCheckIcon class="size-3.5" /> Cobrado este mes
+        </p>
+        <p class="text-2xl font-semibold tabular-nums">
+          {{ formatoCLP(resumen.cobradoMes) }}
+        </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground">
+          Text placeholder
+        </p>
+      </div>
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <RepeatIcon class="size-3.5" /> Suscripciones activas
+        </p>
+        <p class="text-2xl font-semibold tabular-nums">
+          {{ resumen.suscripcionesActivas }}
+        </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground tabular-nums">
+          {{ formatoCLP(resumen.mrr) }}/mes
+        </p>
+      </div>
+      <div class="flex flex-col gap-[5px] bg-background px-4 py-3.5">
+        <p class="flex items-center gap-1.5 text-xs text-foreground-soft">
+          <FileTextIcon class="size-3.5" /> Cotizaciones pendientes
+        </p>
+        <p class="text-2xl font-semibold tabular-nums">
+          {{ resumen.cotizacionesPendientes }}
+        </p>
+        <p class="text-[11.5px] leading-4 text-muted-foreground">
+          Text placeholder
+        </p>
       </div>
     </div>
 
     <p v-if="loading" class="text-sm text-muted-foreground">Cargando…</p>
 
-    <p v-else-if="!hayTareas" class="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-      Todo al día ✅
-    </p>
+    <div
+      v-else
+      class="grid items-start gap-6"
+      :class="{
+        'lg:grid-cols-[minmax(0,1fr)_22rem]': cobrosProgramados.length,
+      }"
+    >
+      <div class="grid min-w-0 items-start gap-6 lg:grid-cols-2">
+        <p
+          v-if="!hayTareas"
+          class="rounded-lg border border-dashed border-sidebar-border p-6 text-center lg:col-span-2 text-muted-foreground"
+        >
+          Todo al día ✅
+        </p>
 
-    <template v-else>
-      <!-- 1. Suscripciones sin cobro del ciclo vigente -->
-      <section v-if="suscripcionesSinCobro.length" class="rounded-lg border">
-        <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Suscripciones sin cobro generado ({{ suscripcionesSinCobro.length }})
+        <template v-else>
+          <!-- 1. Suscripciones sin cobro del ciclo vigente -->
+          <section
+            v-if="suscripcionesSinCobro.length"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
+          >
+            <header
+              class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
+            >
+              Suscripciones sin cobro generado
+              <span class="font-normal text-muted-foreground">{{
+                suscripcionesSinCobro.length
+              }}</span>
+            </header>
+            <ul class="divide-y divide-sidebar-border">
+              <li
+                v-for="{ suscripcion: s, mesCiclo } in suscripcionesSinCobro"
+                :key="s.id"
+                class="flex items-center gap-3 px-5 py-3 text-sm"
+              >
+                <span class="size-2 shrink-0 rounded-full bg-violet-500" />
+                <span class="min-w-0 flex-1 truncate">
+                  {{ s.cliente_nombre }}
+                  <span class="text-muted-foreground"
+                    >· {{ s.descripcion }}</span
+                  >
+                </span>
+                <span class="hidden shrink-0 text-muted-foreground sm:inline">{{
+                  mesCicloLegible(mesCiclo)
+                }}</span>
+                <span class="shrink-0 tabular-nums">{{
+                  formatoCLP(s.monto)
+                }}</span>
+                <Button
+                  size="sm"
+                  :disabled="procesando === `sus-${s.id}`"
+                  @click="generarCobroDeSuscripcion(s, mesCiclo)"
+                >
+                  {{
+                    procesando === `sus-${s.id}`
+                      ? "Generando…"
+                      : "Generar cobro"
+                  }}
+                </Button>
+              </li>
+            </ul>
+          </section>
+
+          <!-- 2. OTs completadas sin cobro -->
+          <section
+            v-if="otsSinCobro.length"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
+          >
+            <header
+              class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
+            >
+              Órdenes de trabajo completadas sin cobro
+              <span class="font-normal text-muted-foreground">{{
+                otsSinCobro.length
+              }}</span>
+            </header>
+            <ul class="divide-y divide-sidebar-border">
+              <li
+                v-for="o in otsSinCobro"
+                :key="o.id"
+                class="flex items-center gap-3 px-5 py-3 text-sm"
+              >
+                <span class="size-2 shrink-0 rounded-full bg-emerald-500" />
+                <span class="min-w-0 flex-1 truncate">
+                  {{ o.cliente_nombre }}
+                  <span class="text-muted-foreground"
+                    >· OT N°{{ o.numero }}</span
+                  >
+                </span>
+                <span class="shrink-0 tabular-nums">{{
+                  formatoCLP(o.monto)
+                }}</span>
+                <Button
+                  size="sm"
+                  :disabled="procesando === `ot-${o.id}`"
+                  @click="generarCobroDeOt(o)"
+                >
+                  {{
+                    procesando === `ot-${o.id}` ? "Generando…" : "Generar cobro"
+                  }}
+                </Button>
+              </li>
+            </ul>
+          </section>
+
+          <!-- 3. Cotizaciones aceptadas sin OT -->
+          <section
+            v-if="cotizacionesSinOt.length"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
+          >
+            <header
+              class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
+            >
+              Cotizaciones aceptadas sin OT
+              <span class="font-normal text-muted-foreground">{{
+                cotizacionesSinOt.length
+              }}</span>
+            </header>
+            <ul class="divide-y divide-sidebar-border">
+              <li
+                v-for="q in cotizacionesSinOt"
+                :key="q.id"
+                class="flex items-center gap-3 px-5 py-3 text-sm"
+              >
+                <span class="size-2 shrink-0 rounded-full bg-orange-500" />
+                <span class="min-w-0 flex-1 truncate">
+                  {{ q.cliente_nombre }}
+                  <span class="text-muted-foreground"
+                    >· Cotización N°{{ q.numero }}</span
+                  >
+                </span>
+                <span class="shrink-0 tabular-nums">{{
+                  formatoCLP(q.total)
+                }}</span>
+                <Button
+                  size="sm"
+                  :disabled="procesando === `cot-${q.id}`"
+                  @click="generarOtDeCotizacion(q)"
+                >
+                  {{
+                    procesando === `cot-${q.id}` ? "Generando…" : "Generar OT"
+                  }}
+                </Button>
+              </li>
+            </ul>
+          </section>
+
+          <!-- 4–6. Cobros por enviar, pendientes y boletas pendientes -->
+          <section
+            v-for="lista in listasDeCobros"
+            :key="lista.titulo"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
+          >
+            <header
+              class="flex items-center gap-2 px-3.5 py-3.5 text-base font-semibold"
+            >
+              {{ lista.titulo }}
+              <span class="font-normal text-muted-foreground">{{
+                lista.cobros.length
+              }}</span>
+            </header>
+            <div
+              class="flex items-center gap-3 border-y border-sidebar-border px-3.5 py-2.5 text-xs text-foreground-soft"
+            >
+              <span class="min-w-0 flex-1">Cliente</span>
+              <span class="w-14 shrink-0">N°</span>
+              <span class="w-24 shrink-0 text-right">Monto</span>
+            </div>
+            <ul class="divide-y divide-sidebar-border">
+              <li v-for="c in lista.cobros" :key="c.id">
+                <RouterLink
+                  :to="{ query: { ...$route.query, cobro: c.id } }"
+                  class="flex h-9.25 items-center gap-3 px-3.5 text-sm outline-none hover:bg-accent focus-visible:bg-accent"
+                >
+                  <span class="min-w-0 flex-1 truncate font-medium">{{
+                    c.cliente_nombre
+                  }}</span>
+                  <span
+                    class="w-14 shrink-0 font-mono text-foreground-soft tabular-nums"
+                    >{{ c.numero }}</span
+                  >
+                  <span class="w-24 shrink-0 text-right font-mono tabular-nums">{{
+                    formatoCLP(c.monto)
+                  }}</span>
+                </RouterLink>
+              </li>
+            </ul>
+          </section>
+        </template>
+      </div>
+
+      <!-- Programados: cobros con fecha futura. No cuentan como tarea hasta su fecha. -->
+      <section
+        v-if="cobrosProgramados.length"
+        class="overflow-hidden rounded-lg border border-sidebar-border"
+      >
+        <header class="flex items-center gap-2 px-5 pt-4 pb-2 font-semibold">
+          Cobros programados
+          <span class="font-normal text-muted-foreground">{{
+            cobrosProgramados.length
+          }}</span>
+          <CalendarClockIcon class="ml-auto size-4 text-muted-foreground" />
         </header>
-        <ul class="divide-y">
-          <li v-for="{ suscripcion: s, mesCiclo } in suscripcionesSinCobro" :key="s.id"
-            class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-            <span>
-              {{ s.cliente_nombre }} — {{ s.descripcion }}
-              <span class="text-muted-foreground">
-                · {{ mesCicloLegible(mesCiclo) }} · {{ formatoCLP(s.monto) }}
+        <ul class="pb-2">
+          <li v-for="c in cobrosProgramados" :key="c.id">
+            <RouterLink
+              :to="{ name: 'cobro-editar', params: { id: c.id } }"
+              class="flex items-start gap-3 px-5 py-2.5 text-sm hover:bg-muted/50"
+            >
+              <span
+                class="mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/50"
+              />
+              <span class="min-w-0 flex-1">
+                <span class="block truncate">{{ c.cliente_nombre }}</span>
+                <span class="block text-xs text-muted-foreground">
+                  N°{{ c.numero }} · desde el {{ fechaCorta(c.fecha_cobro) }}
+                </span>
               </span>
-            </span>
-            <Button size="sm" :disabled="procesando === `sus-${s.id}`" @click="generarCobroDeSuscripcion(s, mesCiclo)">
-              {{ procesando === `sus-${s.id}` ? 'Generando…' : 'Generar cobro' }}
-            </Button>
+              <span class="shrink-0 tabular-nums">{{
+                formatoCLP(c.monto)
+              }}</span>
+            </RouterLink>
           </li>
         </ul>
       </section>
+    </div>
 
-      <!-- 2. OTs completadas sin cobro -->
-      <section v-if="otsSinCobro.length" class="rounded-lg border">
-        <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Órdenes de trabajo completadas sin cobro ({{ otsSinCobro.length }})
-        </header>
-        <ul class="divide-y">
-          <li v-for="o in otsSinCobro" :key="o.id" class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-            <span>
-              OT N°{{ o.numero }} — {{ o.cliente_nombre }}
-              <span class="text-muted-foreground">· {{ formatoCLP(o.monto) }}</span>
-            </span>
-            <Button size="sm" :disabled="procesando === `ot-${o.id}`" @click="generarCobroDeOt(o)">
-              {{ procesando === `ot-${o.id}` ? 'Generando…' : 'Generar cobro' }}
-            </Button>
-          </li>
-        </ul>
-      </section>
-
-      <!-- 3. Cotizaciones aceptadas sin OT -->
-      <section v-if="cotizacionesSinOt.length" class="rounded-lg border">
-        <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Cotizaciones aceptadas sin OT ({{ cotizacionesSinOt.length }})
-        </header>
-        <ul class="divide-y">
-          <li v-for="q in cotizacionesSinOt" :key="q.id"
-            class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-            <span>
-              Cotización N°{{ q.numero }} — {{ q.cliente_nombre }}
-              <span class="text-muted-foreground">· {{ formatoCLP(q.total) }}</span>
-            </span>
-            <Button size="sm" :disabled="procesando === `cot-${q.id}`" @click="generarOtDeCotizacion(q)">
-              {{ procesando === `cot-${q.id}` ? 'Generando…' : 'Generar OT' }}
-            </Button>
-          </li>
-        </ul>
-      </section>
-
-      <!-- 4. Cobros por enviar -->
-      <section v-if="cobrosPorEnviar.length" class="rounded-lg border">
-        <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Cobros por enviar ({{ cobrosPorEnviar.length }})
-        </header>
-        <ul class="divide-y">
-          <li v-for="c in cobrosPorEnviar" :key="c.id"
-            class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-            <span>
-              N°{{ c.numero }} — {{ c.cliente_nombre }}
-              <span class="text-muted-foreground">· {{ formatoCLP(c.monto) }}</span>
-            </span>
-            <Button as-child size="sm" variant="outline">
-              <RouterLink :to="{ name: 'cobro-editar', params: { id: c.id } }">Ver</RouterLink>
-            </Button>
-          </li>
-        </ul>
-      </section>
-
-      <!-- 5. Pendientes -->
-      <section v-if="cobrosPorCobrar.length" class="rounded-lg border">
-        <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Pendientes ({{ cobrosPorCobrar.length }})
-        </header>
-        <ul class="divide-y">
-          <li v-for="c in cobrosPorCobrar" :key="c.id"
-            class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-            <span>
-              N°{{ c.numero }} — {{ c.cliente_nombre }}
-              <span class="text-muted-foreground">· {{ formatoCLP(c.monto) }}</span>
-            </span>
-            <Button as-child size="sm" variant="outline">
-              <RouterLink :to="{ name: 'cobro-editar', params: { id: c.id } }">Ver</RouterLink>
-            </Button>
-          </li>
-        </ul>
-      </section>
-
-      <!-- 6. Boletas pendientes -->
-      <section v-if="boletasPendientes.length" class="rounded-lg border">
-        <header class="border-b bg-muted/30 px-4 py-2 text-sm font-semibold">
-          Boletas pendientes ({{ boletasPendientes.length }})
-        </header>
-        <ul class="divide-y">
-          <li v-for="c in boletasPendientes" :key="c.id"
-            class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-            <span>
-              N°{{ c.numero }} — {{ c.cliente_nombre }}
-              <span class="text-muted-foreground">· {{ formatoCLP(c.monto) }}</span>
-            </span>
-            <Button as-child size="sm" variant="outline">
-              <RouterLink :to="{ name: 'cobro-editar', params: { id: c.id } }">Ver</RouterLink>
-            </Button>
-          </li>
-        </ul>
-      </section>
-    </template>
-
-    <!-- Programados: cobros con fecha futura. No cuentan como tarea hasta su fecha. -->
-    <section v-if="!loading && cobrosProgramados.length" class="rounded-lg border border-dashed">
-      <header class="border-b border-dashed px-4 py-2 text-sm font-semibold text-muted-foreground">
-        Cobros programados ({{ cobrosProgramados.length }})
-      </header>
-      <ul class="divide-y">
-        <li v-for="c in cobrosProgramados" :key="c.id"
-          class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-          <span>
-            N°{{ c.numero }} — {{ c.cliente_nombre }}
-            <span class="text-muted-foreground">
-              · {{ formatoCLP(c.monto) }} · desde el {{ fechaCorta(c.fecha_cobro) }}
-            </span>
-          </span>
-          <Button as-child size="sm" variant="outline">
-            <RouterLink :to="{ name: 'cobro-editar', params: { id: c.id } }">Ver</RouterLink>
-          </Button>
-        </li>
-      </ul>
-    </section>
+    <CobroDetallePanel :id="cobroAbierto" @cerrar="cerrarCobro" />
   </div>
 </template>
