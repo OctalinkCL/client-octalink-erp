@@ -42,22 +42,19 @@ const fechaHoy = new Intl.DateTimeFormat("es-CL", {
   month: "long",
 }).format(new Date());
 
-// Las tres listas de cobros comparten fila: solo cambia el título y el color del punto.
+// Las tres listas de cobros comparten fila: solo cambia el título.
 const listasDeCobros = computed(() =>
   [
     {
       titulo: "Cobros por enviar",
-      punto: "bg-amber-500",
       cobros: cobrosPorEnviar.value,
     },
     {
       titulo: "Pendientes",
-      punto: "bg-blue-500",
       cobros: cobrosPorCobrar.value,
     },
     {
       titulo: "Boletas pendientes",
-      punto: "bg-pink-500",
       cobros: boletasPendientes.value,
     },
   ].filter((l) => l.cobros.length),
@@ -147,10 +144,10 @@ const listasDeCobros = computed(() =>
         'lg:grid-cols-[minmax(0,1fr)_22rem]': cobrosProgramados.length,
       }"
     >
-      <div class="flex min-w-0 flex-col gap-6">
+      <div class="grid min-w-0 items-start gap-6 lg:grid-cols-2">
         <p
           v-if="!hayTareas"
-          class="rounded-xl border border-dashed border-sidebar-border p-6 text-center text-muted-foreground"
+          class="rounded-lg border border-dashed border-sidebar-border p-6 text-center lg:col-span-2 text-muted-foreground"
         >
           Todo al día ✅
         </p>
@@ -159,7 +156,7 @@ const listasDeCobros = computed(() =>
           <!-- 1. Suscripciones sin cobro del ciclo vigente -->
           <section
             v-if="suscripcionesSinCobro.length"
-            class="overflow-hidden rounded-xl border border-sidebar-border"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
           >
             <header
               class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
@@ -206,7 +203,7 @@ const listasDeCobros = computed(() =>
           <!-- 2. OTs completadas sin cobro -->
           <section
             v-if="otsSinCobro.length"
-            class="overflow-hidden rounded-xl border border-sidebar-border"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
           >
             <header
               class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
@@ -248,7 +245,7 @@ const listasDeCobros = computed(() =>
           <!-- 3. Cotizaciones aceptadas sin OT -->
           <section
             v-if="cotizacionesSinOt.length"
-            class="overflow-hidden rounded-xl border border-sidebar-border"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
           >
             <header
               class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
@@ -291,39 +288,40 @@ const listasDeCobros = computed(() =>
           <section
             v-for="lista in listasDeCobros"
             :key="lista.titulo"
-            class="overflow-hidden rounded-xl border border-sidebar-border"
+            class="overflow-hidden rounded-lg border border-sidebar-border"
           >
             <header
-              class="flex items-center gap-2 border-b border-sidebar-border px-5 py-4 font-semibold"
+              class="flex items-center gap-2 px-3.5 py-3.5 text-base font-semibold"
             >
               {{ lista.titulo }}
               <span class="font-normal text-muted-foreground">{{
                 lista.cobros.length
               }}</span>
             </header>
+            <div
+              class="flex items-center gap-3 border-y border-sidebar-border px-3.5 py-2.5 text-xs text-foreground-soft"
+            >
+              <span class="min-w-0 flex-1">Cliente</span>
+              <span class="w-14 shrink-0">N°</span>
+              <span class="w-24 shrink-0 text-right">Monto</span>
+            </div>
             <ul class="divide-y divide-sidebar-border">
-              <li
-                v-for="c in lista.cobros"
-                :key="c.id"
-                class="flex items-center gap-3 px-5 py-3 text-sm"
-              >
-                <span
-                  class="size-2 shrink-0 rounded-full"
-                  :class="lista.punto"
-                />
-                <span class="min-w-0 flex-1 truncate">
-                  {{ c.cliente_nombre }}
-                  <span class="text-muted-foreground">· N°{{ c.numero }}</span>
-                </span>
-                <span class="shrink-0 tabular-nums">{{
-                  formatoCLP(c.monto)
-                }}</span>
-                <Button as-child size="sm" variant="outline">
-                  <RouterLink
-                    :to="{ name: 'cobro-editar', params: { id: c.id } }"
-                    >Ver</RouterLink
+              <li v-for="c in lista.cobros" :key="c.id">
+                <RouterLink
+                  :to="{ name: 'cobro-editar', params: { id: c.id } }"
+                  class="flex h-9.25 items-center gap-3 px-3.5 text-sm outline-none hover:bg-accent focus-visible:bg-accent"
+                >
+                  <span class="min-w-0 flex-1 truncate font-medium">{{
+                    c.cliente_nombre
+                  }}</span>
+                  <span
+                    class="w-14 shrink-0 font-mono text-foreground-soft tabular-nums"
+                    >{{ c.numero }}</span
                   >
-                </Button>
+                  <span class="w-24 shrink-0 text-right font-mono tabular-nums">{{
+                    formatoCLP(c.monto)
+                  }}</span>
+                </RouterLink>
               </li>
             </ul>
           </section>
@@ -333,7 +331,7 @@ const listasDeCobros = computed(() =>
       <!-- Programados: cobros con fecha futura. No cuentan como tarea hasta su fecha. -->
       <section
         v-if="cobrosProgramados.length"
-        class="overflow-hidden rounded-xl border border-sidebar-border"
+        class="overflow-hidden rounded-lg border border-sidebar-border"
       >
         <header class="flex items-center gap-2 px-5 pt-4 pb-2 font-semibold">
           Cobros programados
